@@ -40,6 +40,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDeleteEvent, &QAction::triggered, this, &MainWindow::deleteEvent);
     connect(ui->actionDeleteUser, &QAction::triggered, this, &MainWindow::deleteUser);
     connect(ui->actionDeleteTransaction, &QAction::triggered, this, &MainWindow::deleteTransaction);
+
+    connect(ui->tvEventTransactions, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectTransaction(QModelIndex)));
 }
 
 void MainWindow::showError(const QSqlError &err)
@@ -111,7 +113,7 @@ void MainWindow::loadTransactions()
 
 void MainWindow::updateTransactionUserGiving()
 {
-    int eventId = getIdFromQCombobox(ui->cmbEvent);
+    int eventId = getIdFromCmb(ui->cmbEvent);
 
     // Create the data model
     transactionModel = new QSqlQueryModel;
@@ -128,6 +130,7 @@ void MainWindow::updateTransactionUserGiving()
 
     ui->tvEventTransactions->setColumnHidden(model->fieldIndex("Event Name"), true);
     ui->tvEventTransactions->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tvEventTransactions->setSelectionBehavior(QAbstractItemView::SelectRows);
 
     for(int c = 0; c < ui->tvEventTransactions->horizontalHeader()->count(); ++c)
     {
@@ -143,8 +146,8 @@ void MainWindow::updateTransactionUserGiving()
 
 void MainWindow::updateTransactionUserReceiving()
 {
-    int eventId = getIdFromQCombobox(ui->cmbEvent);
-    int userGivingId = getIdFromQCombobox(ui->cmbUserGives);
+    int eventId = getIdFromCmb(ui->cmbEvent);
+    int userGivingId = getIdFromCmb(ui->cmbUserGives);
 
     // Create the data model
     transactionModel = new QSqlQueryModel;
@@ -162,9 +165,9 @@ void MainWindow::updateTransactionUserReceiving()
 
 void MainWindow::updateTransactionAmount()
 {
-    int eventId = getIdFromQCombobox(ui->cmbEvent);
-    int userGivingId = getIdFromQCombobox(ui->cmbUserGives);
-    int userReceivingId = getIdFromQCombobox(ui->cmbUserReceives);
+    int eventId = getIdFromCmb(ui->cmbEvent);
+    int userGivingId = getIdFromCmb(ui->cmbUserGives);
+    int userReceivingId = getIdFromCmb(ui->cmbUserReceives);
 
     // Create the data model
     transactionModel = new QSqlQueryModel;
@@ -175,9 +178,22 @@ void MainWindow::updateTransactionAmount()
     if(transactionModel->rowCount() == 0)
         showError(transactionModel->lastError());
 
-    QVariant value = transactionModel->data(transactionModel->index(0,0));
+    double value = transactionModel->data(transactionModel->index(0,0)).toDouble();
 
-    ui->dsbAmount->setValue(value.toDouble());
+    // Create the data model
+    transactionModel = new QSqlQueryModel;
+    transactionModel->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
+                               " AND transactions.usergives = " + QString::number(userReceivingId) +
+                               " AND transactions.userreceives = " + QString::number(userGivingId));
+
+    if(transactionModel->rowCount() == 0)
+        showError(transactionModel->lastError());
+
+    value -= transactionModel->data(transactionModel->index(0,0)).toDouble();
+
+    ui->dsbAmount->setValue(value);
+
+    selectRowInTransactionTable(ui->tvEventTransactions, ui->cmbUserGives->currentText(), ui->cmbUserReceives->currentText());
 }
 
 // _____Menu bar_____
@@ -287,7 +303,7 @@ void MainWindow::newEvent()
             // save Event
             QSqlQuery query;
             query.prepare(dbGetInsertEventQuery());
-            dbAddEvent(query, leName->text(), deStart->date(), deEnd->date(), lePlace->text(), leDescription->text(), 0, QVariant(getIdFromQCombobox(cmbAdmin)));
+            dbAddEvent(query, leName->text(), deStart->date(), deEnd->date(), lePlace->text(), leDescription->text(), 0, QVariant(getIdFromCmb(cmbAdmin)));
             if(ui->rbEvents->isChecked())
                 ui->rbEvents->click();
         }
@@ -347,7 +363,7 @@ void MainWindow::newTransaction()
     if (dialog.exec() == QDialog::Accepted) {
         // todo: check dialog before closing it
         QString problem;
-        if(getIdFromQCombobox(cmbUserGives)==getIdFromQCombobox(cmbUserReceives))
+        if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
         else if (deTransactionDate->date() > QDateTime::currentDateTime().date()) // todo: date between start and end date from event
             problem = "The transaction date cannot be in the future";
@@ -357,7 +373,7 @@ void MainWindow::newTransaction()
             // save Transaction
             QSqlQuery query;
             query.prepare(dbGetInsertTransactionQuery());
-            dbAddTransaction(query, QVariant(getIdFromQCombobox(cmbUserGives)), QVariant(getIdFromQCombobox(cmbUserReceives)), QVariant(getIdFromQCombobox(cmbEvents)),
+            dbAddTransaction(query, QVariant(getIdFromCmb(cmbUserGives)), QVariant(getIdFromCmb(cmbUserReceives)), QVariant(getIdFromCmb(cmbEvents)),
                            dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text());
             if(ui->rbKittyTransactions->isChecked())
                 ui->rbKittyTransactions->click();
@@ -399,14 +415,14 @@ void MainWindow::deleteUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions, events;
-        if((transactions = getNumTransactions(getIdFromQCombobox(cmbUser))))
+        if((transactions = getNumTransactions(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
             msgBox.setText("The user has " + QString::number(transactions) + " transactions. Delete them first");
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
         }
-        else if((events = getNumEventsOfUser(getIdFromQCombobox(cmbUser))))
+        else if((events = getNumEventsOfUser(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
             msgBox.setText("The user is admin of " + QString::number(events) + " events. Delete them first");
@@ -415,7 +431,7 @@ void MainWindow::deleteUser()
         }
         else
         {
-            dbDeleteUser(getIdFromQCombobox(cmbUser));
+            dbDeleteUser(getIdFromCmb(cmbUser));
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -445,7 +461,7 @@ void MainWindow::deleteEvent()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions;
-        if((transactions = getNumTransactions(-1,getIdFromQCombobox(cmbEvent))))
+        if((transactions = getNumTransactions(-1,getIdFromCmb(cmbEvent))))
         {
             QMessageBox msgBox;
             msgBox.setText("The event has " + QString::number(transactions) + " transactions. Delete them first");
@@ -454,7 +470,7 @@ void MainWindow::deleteEvent()
         }
         else
         {
-            dbDeleteEvent(getIdFromQCombobox(cmbEvent));
+            dbDeleteEvent(getIdFromCmb(cmbEvent));
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -498,7 +514,7 @@ void MainWindow::deleteTransaction()
     }
 }
 
-//_____     _____
+//_____GUI Slots_____
 
 void MainWindow::tabSelected(int index)
 {
@@ -506,9 +522,66 @@ void MainWindow::tabSelected(int index)
         loadTransactions();
 }
 
-int MainWindow::getIdFromQCombobox(QComboBox *cmbBox)
+void MainWindow::selectTransaction(QModelIndex index)
+{
+    int row = index.row();
+    QAbstractItemModel *model = ui->tvEventTransactions->model();
+    int transactionId = model->data(model->index(row,0)).toInt();
+    int userGives, userReceives;
+    dbGetUsersOfTransaction(transactionId, &userGives, &userReceives);
+
+    selectIdInCmb(ui->cmbUserGives, userGives);
+    selectIdInCmb(ui->cmbUserReceives, userReceives);
+}
+
+//_____Helpers_____
+
+int MainWindow::getIdFromCmb(QComboBox *cmbBox)
 {
     return cmbBox->model()->data(cmbBox->model()->index(cmbBox->currentIndex(),1)).toInt();
+}
+
+void MainWindow::selectIdInCmb(QComboBox *cmbBox, int id)
+{
+    QAbstractItemModel *model = cmbBox->model();
+    for(int i = 0; i < model->rowCount(); i++)
+    {
+        if(model->data(model->index(i,1)).toInt() == id)
+        {
+            cmbBox->setCurrentIndex(i);
+            return;
+        }
+    }
+}
+
+void MainWindow::selectRowInTable(QTableView *tableView, int id)
+{
+    QAbstractItemModel *model = tableView->model();
+    for(int i = 0; i < model->rowCount(); i++)
+    {
+        if(model->data(model->index(i,0)).toInt() == id)
+        {
+            tableView->selectRow(i);
+            return;
+        }
+    }
+}
+
+void MainWindow::selectRowInTransactionTable(QTableView *tableView, QString userGives, QString userReceives)
+{
+    QAbstractItemModel *model = tableView->model();
+
+    if(!model)
+        return;
+
+    for(int i = 0; i < model->rowCount(); i++)
+    {
+        if(model->data(model->index(i,1)).toString() == userGives && model->data(model->index(i,2)).toString() == userReceives)
+        {
+            tableView->selectRow(i);
+            return;
+        }
+    }
 }
 
 //_____Database functions_____
