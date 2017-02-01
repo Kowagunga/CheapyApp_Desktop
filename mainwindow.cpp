@@ -106,7 +106,9 @@ void MainWindow::loadTransactions()
     if(transactionModel->rowCount() == 0)
         showError(transactionModel->lastError());
 
+    bool oldState = ui->cmbEvent->blockSignals(true);
     ui->cmbEvent->setModel(transactionModel);
+    ui->cmbEvent->blockSignals(oldState);
 
     updateTransactionUserGiving();
 }
@@ -124,7 +126,9 @@ void MainWindow::updateTransactionUserGiving()
     if(transactionModel->rowCount() == 0)
         showError(transactionModel->lastError());
 
+    bool oldState = ui->cmbUserGives->blockSignals(true);
     ui->cmbUserGives->setModel(transactionModel);
+    ui->cmbUserGives->blockSignals(oldState);
 
     loadTransactionsToTable(ui->tvEventTransactions, true, true, QString("event = " + QString::number(eventId)));
 
@@ -158,7 +162,9 @@ void MainWindow::updateTransactionUserReceiving()
     if(transactionModel->rowCount() == 0)
         showError(transactionModel->lastError());
 
+    bool oldState = ui->cmbUserReceives->blockSignals(true);
     ui->cmbUserReceives->setModel(transactionModel);
+    ui->cmbUserReceives->blockSignals(oldState);
 
     updateTransactionAmount();
 }
