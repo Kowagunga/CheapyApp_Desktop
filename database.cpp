@@ -212,9 +212,12 @@ int DataBase::calcNumUsers(int eventId)
     QSqlQueryModel *transactionModel;
     transactionModel = new QSqlQueryModel;
     transactionModel->setQuery("SELECT nickname FROM users WHERE users.id IS NOT " + QString::number(kittyId) +
-                               " AND users.id IN "
+                               " AND (users.id IN "
                                     "(SELECT usergives FROM transactions WHERE transactions.event = "
-                                        + QString::number(eventId) + ")"); //todo: user also in userreceives
+                                        + QString::number(eventId) + ")" +
+                                    " OR users.id IN "
+                                    "(SELECT userreceives FROM transactions WHERE transactions.event = "
+                                        + QString::number(eventId) + "))");
 
     lastError = transactionModel->lastError();
 
