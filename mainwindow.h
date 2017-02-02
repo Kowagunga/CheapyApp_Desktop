@@ -30,6 +30,7 @@ private slots:
     void deleteEvent();
     void deleteTransaction();
     void tabSelected(int index);
+    void selectTransaction(QModelIndex index);
 
 private:
     Ui::MainWindow *ui;
@@ -38,7 +39,10 @@ private:
     QSqlRelationalTableModel *model;
     QSqlQueryModel *transactionModel;
     void loadTransactions();
-    int getIdFromQCombobox(QComboBox *cmbBox);
+    int getIdFromCmb(QComboBox *cmbBox);
+    void selectIdInCmb(QComboBox *cmbBox, int id);
+    void selectRowInTable(QTableView *tableView, int id);
+    void selectRowInTransactionTable(QTableView *tableView, QString userGives, QString userReceives);
     void loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition);
     void loadEventsToCmb(QComboBox *cmbBox, QString condition);
     void loadTransactionsToTable(QTableView *tableView, bool showKitty = true, bool showPersonal = true, QString condition = "");

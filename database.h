@@ -86,6 +86,18 @@ QSqlError dbDeleteUser(int userId)
         return QSqlError();
 }
 
+void dbGetUsersOfTransaction(int idTransaction, int *idUserGives, int *idUserReceives)
+{
+    QSqlQueryModel *transactionModel;
+    transactionModel = new QSqlQueryModel;
+
+    transactionModel->setQuery("SELECT usergives, userreceives FROM transactions WHERE id = " + QString::number(idTransaction));
+
+
+    *idUserGives = transactionModel->data(transactionModel->index(0,0)).toInt();
+    *idUserReceives = transactionModel->data(transactionModel->index(0,1)).toInt();
+}
+
 QSqlError dbInit(int *kittyIndex)
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
