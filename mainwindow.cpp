@@ -1,6 +1,5 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "database.h"
 
 #include <QtSql>
 #include <QtDebug>
@@ -17,9 +16,8 @@ MainWindow::MainWindow(QWidget *parent) :
         QMessageBox::critical(this, "Unable to load database", "This demo needs the SQLITE driver");
 
     // initialize the database
-    QSqlError err = dbInit(&kittyId);
-    if (err.type() != QSqlError::NoError) {
-        showError(err);
+    if(db.getLastError().type() != QSqlError::NoError) {
+        showError(db.getLastError());
         return;
     }
 
@@ -142,8 +140,8 @@ void MainWindow::updateTransactionUserGiving()
             c, QHeaderView::Stretch);
     }
 
-    ui->sbNumUsers->setValue(calcNumUsers(eventId));
-    ui->dsbAmountKitty->setValue(calcAmountKitty(eventId));
+    ui->sbNumUsers->setValue(db.calcNumUsers(eventId));
+    ui->dsbAmountKitty->setValue(db.calcAmountKitty(eventId));
 
     updateTransactionUserReceiving();
 }
@@ -245,8 +243,8 @@ void MainWindow::newUser()
         {
             // save User
             QSqlQuery query;
-            query.prepare(dbGetInsertUserQuery());
-            dbAddUser(query,leName->text(),leNickname->text(),deBirthday->date());
+            query.prepare(db.getInsertUserQuery());
+            db.addUser(query,leName->text(),leNickname->text(),deBirthday->date());
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -308,8 +306,8 @@ void MainWindow::newEvent()
         {
             // save Event
             QSqlQuery query;
-            query.prepare(dbGetInsertEventQuery());
-            dbAddEvent(query, leName->text(), deStart->date(), deEnd->date(), lePlace->text(), leDescription->text(), 0, QVariant(getIdFromCmb(cmbAdmin)));
+            query.prepare(db.getInsertEventQuery());
+            db.addEvent(query, leName->text(), deStart->date(), deEnd->date(), lePlace->text(), leDescription->text(), 0, QVariant(getIdFromCmb(cmbAdmin)));
             if(ui->rbEvents->isChecked())
                 ui->rbEvents->click();
         }
@@ -378,8 +376,8 @@ void MainWindow::newTransaction()
         {
             // save Transaction
             QSqlQuery query;
-            query.prepare(dbGetInsertTransactionQuery());
-            dbAddTransaction(query, QVariant(getIdFromCmb(cmbUserGives)), QVariant(getIdFromCmb(cmbUserReceives)), QVariant(getIdFromCmb(cmbEvents)),
+            query.prepare(db.getInsertTransactionQuery());
+            db.addTransaction(query, QVariant(getIdFromCmb(cmbUserGives)), QVariant(getIdFromCmb(cmbUserReceives)), QVariant(getIdFromCmb(cmbEvents)),
                            dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text());
             if(ui->rbKittyTransactions->isChecked())
                 ui->rbKittyTransactions->click();
@@ -421,14 +419,14 @@ void MainWindow::deleteUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions, events;
-        if((transactions = getNumTransactions(getIdFromCmb(cmbUser))))
+        if((transactions = db.getNumTransactions(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
             msgBox.setText("The user has " + QString::number(transactions) + " transactions. Delete them first");
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
         }
-        else if((events = getNumEventsOfUser(getIdFromCmb(cmbUser))))
+        else if((events = db.getNumEventsOfUser(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
             msgBox.setText("The user is admin of " + QString::number(events) + " events. Delete them first");
@@ -437,7 +435,7 @@ void MainWindow::deleteUser()
         }
         else
         {
-            dbDeleteUser(getIdFromCmb(cmbUser));
+            db.deleteUser(getIdFromCmb(cmbUser));
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -467,7 +465,7 @@ void MainWindow::deleteEvent()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions;
-        if((transactions = getNumTransactions(-1,getIdFromCmb(cmbEvent))))
+        if((transactions = db.getNumTransactions(-1,getIdFromCmb(cmbEvent))))
         {
             QMessageBox msgBox;
             msgBox.setText("The event has " + QString::number(transactions) + " transactions. Delete them first");
@@ -476,7 +474,7 @@ void MainWindow::deleteEvent()
         }
         else
         {
-            dbDeleteEvent(getIdFromCmb(cmbEvent));
+            db.deleteEvent(getIdFromCmb(cmbEvent));
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -510,7 +508,7 @@ void MainWindow::deleteTransaction()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int idTransaction = model->data(model->index(tvTransactions->currentIndex().row(),0)).toInt();
-        dbDeleteTransaction(idTransaction);
+        db.deleteTransaction(idTransaction);
         if(ui->rbKittyTransactions->isChecked())
             ui->rbKittyTransactions->click();
         if(ui->rbPersonalTransactions->isChecked())
@@ -534,7 +532,7 @@ void MainWindow::selectTransaction(QModelIndex index)
     QAbstractItemModel *model = ui->tvEventTransactions->model();
     int transactionId = model->data(model->index(row,0)).toInt();
     int userGives, userReceives;
-    dbGetUsersOfTransaction(transactionId, &userGives, &userReceives);
+    db.getUsersOfTransaction(transactionId, &userGives, &userReceives);
 
     selectIdInCmb(ui->cmbUserGives, userGives);
     selectIdInCmb(ui->cmbUserReceives, userReceives);
@@ -598,7 +596,7 @@ void MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString co
     transactionModel = new QSqlQueryModel;
     QString strQuery = "SELECT nickname, id FROM users";
     if(!includeKitty)
-        strQuery.append(" WHERE users.id IS NOT " + QString::number(kittyId));
+        strQuery.append(" WHERE users.id IS NOT " + QString::number(db.getKittyId()));
     if(condition!="" && !includeKitty)
         strQuery.append(" AND " + condition);
     if(condition!="" && includeKitty)
@@ -650,11 +648,11 @@ void MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     QString filter;
     if(showKitty && !showPersonal)
     {
-        filter = "userreceives = " + QString::number(kittyId) + " OR usergives = " + QString::number(kittyId);
+        filter = "userreceives = " + QString::number(db.getKittyId()) + " OR usergives = " + QString::number(db.getKittyId());
     }
     else if(!showKitty && showPersonal)
     {
-        filter = "userreceives IS NOT " + QString::number(kittyId) +  " AND usergives IS NOT " + QString::number(kittyId);
+        filter = "userreceives IS NOT " + QString::number(db.getKittyId()) +  " AND usergives IS NOT " + QString::number(db.getKittyId());
     }
     else if (!showKitty && !showPersonal)
     {
@@ -694,7 +692,7 @@ void MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     model->setHeaderData(model->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
 
     QString filter;
-    filter = "id IS NOT " + QString::number(kittyId);
+    filter = "id IS NOT " + QString::number(db.getKittyId());
 
     if(condition != "")
     {
