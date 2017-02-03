@@ -3,6 +3,8 @@
 
 #include <QtSql>
 
+#include "dbclasses.h"
+
 class DataBase
 {
 public:
