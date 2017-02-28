@@ -7,7 +7,6 @@ class User
 {
 public:
     User();
-    User(int id){ this->id = id;}
     User(int id, QString name = "", QString nickname = "", QDate birthdate = QDate());
     User(QString name, QString nickname, QDate birthdate);
     int getId() const {return id;}
@@ -38,7 +37,6 @@ class Event
 {
 public:
     Event();
-    Event(int id){ this->id = id;}
     Event(int id, QString name = "", QDate start = QDate(), QDate end = QDate(), User admin = User(), QString place = "", QString description = "", bool finished = false);
     Event(QString name, QDate start, QDate end,  User admin, QString place = "", QString description = "", bool finished = false);
     int getId() const {return id;}
@@ -50,6 +48,7 @@ public:
     QString getPlace() const {return place;}
     QString getDescription() const {return description;}
     bool isFinished() const {return finished;}
+    void setFinished(bool finished = true) {this->finished = finished;}
 
     operator std::string() const
     {
@@ -71,6 +70,46 @@ private:
     QString place;
     QString description;
     bool finished;
+};
+
+class Transaction
+{
+public:
+    Transaction();
+    Transaction(int id, User userGiving = User(), User userReceiving = User(), Event event = Event(),
+                double amount = 0.0, QDate date = QDate(), QString place = "", QString description = "");
+    Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place = "", QString description = "");
+    int getId() const {return id;}
+    void setId(int id){this->id = id;}
+    User getUserGiving() const {return userGiving;}
+    User getUserReceiving() const {return userReceiving;}
+    Event getEvent() const {return event;}
+    double getAmount() const {return amount;}
+    QDate getDate() const {return date;}
+    QString getPlace() const {return place;}
+    QString getDescription() const {return description;}
+
+    operator std::string() const
+    {
+        QString result;
+        result = QString::number(id);
+        result.append(", ").append(userGiving.getNickname());
+        result.append(" payed ").append(QString::number(amount, 'g', 2));
+        result.append(" to ").append(userReceiving.getNickname());
+        result.append(" on ").append(date.toString("dd.MM.yyyy"));
+        result.append(" for ").append(event.getName());
+        return result.toUtf8().constData();
+    }
+
+private:
+    int id;
+    User userGiving;
+    User userReceiving;
+    Event event;
+    double amount;
+    QDate date;
+    QString place;
+    QString description;
 };
 
 #endif // DBCLASSES_H
