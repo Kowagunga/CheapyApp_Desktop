@@ -38,26 +38,35 @@ QSqlError DataBase::init()
 
     if (!q.prepare(getInsertUserQuery()))
         return q.lastError();
-    QVariant kittyIdVariant = addUser(q, QLatin1String("Kitty"), QLatin1String("Kitty"), QDate(2000, 1, 1));
-    QVariant brunoId = addUser(q, QLatin1String("Bruno Santamaria"), QLatin1String("Kowagunga"), QDate(1989, 2, 14));
-    QVariant xaviId = addUser(q, QLatin1String("Xavier Parareda"),  QLatin1String("X"), QDate(1989, 7, 30));
-    QVariant sustoId = addUser(q, QLatin1String("Luis Lozano"),  QLatin1String("Asustao"), QDate(1989, 12, 20));
+
+    User kitty = User(QLatin1String("Kitty"), QLatin1String("Kitty"), QDate(2000, 1, 1));
+    User bruno = User(QLatin1String("Bruno Santamaria"), QLatin1String("Kowagunga"), QDate(1989, 2, 14));
+    User xavi = User(QLatin1String("Xavier Parareda"),  QLatin1String("X"), QDate(1989, 7, 30));
+    User asustao = User(QLatin1String("Luis Lozano"),  QLatin1String("Asustao"), QDate(1989, 12, 20));
+
+    kitty.setId(addUser(q, kitty).toInt());
+    bruno.setId(addUser(q, bruno).toInt());
+    xavi.setId(addUser(q, xavi).toInt());
+    asustao.setId(addUser(q, asustao).toInt());
 
     if (!q.prepare(getInsertEventQuery()))
         return q.lastError();
-    QVariant sWarsaw = addEvent(q, QLatin1String("Warsaw Trip"), QDate(2016, 9, 1), QDate(2016, 9, 5), QLatin1String("Warsaw, Poland"), QLatin1String("Trip to Wasaw to destroy our livers"), 0, brunoId);
+
+    Event warsaw = Event(QLatin1String("Warsaw Trip"), QDate(2016, 9, 1), QDate(2016, 9, 5), bruno, QLatin1String("Warsaw, Poland"), QLatin1String("Trip to Wasaw to destroy our livers"), 0);
+    warsaw.setId(addEvent(q, warsaw).toInt());
 
     if (!q.prepare(getInsertTransactionQuery()))
         return q.lastError();
-    addTransaction(q, brunoId, sustoId, sWarsaw, 60.0, QDate(2016,9,2), QLatin1String("Hamburg (Germany)"), QLatin1String("Airbnb 3 nights"));
-    addTransaction(q, brunoId, xaviId, sWarsaw, 85.0, QDate(2016,9,2), QLatin1String("Hamburg (Germany)"), QLatin1String("Airbnb 4 nights"));
-    addTransaction(q, xaviId, kittyIdVariant, sWarsaw, 30.0, QDate(2016,9,1), QLatin1String("Warsaw"), QLatin1String("Supermarket Friday"));
-    addTransaction(q, xaviId, kittyIdVariant, sWarsaw, 13.0, QDate(2016,9,2), QLatin1String("Warsaw"), QLatin1String("Supermarket Saturday"));
-    addTransaction(q, sustoId, kittyIdVariant, sWarsaw, 75.0, QDate(2016,9,2), QLatin1String("Warsaw"), QLatin1String("Cash Friday"));
-    addTransaction(q, brunoId, kittyIdVariant, sWarsaw, 75.0, QDate(2016,9,3), QLatin1String("Warsaw"), QLatin1String("Cash Sunday"));
-    addTransaction(q, brunoId, kittyIdVariant, sWarsaw, -38.0, QDate(2016,9,5), QLatin1String("Warsaw"), QLatin1String("Cash back Monday"));
 
-    kittyId = kittyIdVariant.toInt();
+    addTransaction(q, Transaction(bruno, asustao, warsaw.getId(), 60.0, QDate(2016,9,2), QLatin1String("Hamburg (Germany)"), QLatin1String("Airbnb 3 nights")));
+    addTransaction(q, Transaction(bruno, xavi, warsaw, 85.0, QDate(2016,9,2), QLatin1String("Hamburg (Germany)"), QLatin1String("Airbnb 4 nights")));
+    addTransaction(q, Transaction(xavi, kitty, warsaw, 30.0, QDate(2016,9,1), QLatin1String("Warsaw"), QLatin1String("Supermarket Friday")));
+    addTransaction(q, Transaction(xavi, kitty, warsaw, 13.0, QDate(2016,9,2), QLatin1String("Warsaw"), QLatin1String("Supermarket Saturday")));
+    addTransaction(q, Transaction(asustao, kitty, warsaw, 75.0, QDate(2016,9,2), QLatin1String("Warsaw"), QLatin1String("Cash Friday")));
+    addTransaction(q, Transaction(bruno, kitty, warsaw, 75.0, QDate(2016,9,3), QLatin1String("Warsaw"), QLatin1String("Cash Sunday")));
+    addTransaction(q, Transaction(bruno, kitty, warsaw, -38.0, QDate(2016,9,5), QLatin1String("Warsaw"), QLatin1String("Cash back Monday")));
+
+    kittyId = kitty.getId();
     return QSqlError();
 }
 
@@ -76,41 +85,42 @@ QLatin1String DataBase::getInsertTransactionQuery()
     return QLatin1String("insert into transactions(usergives, userreceives, event, amount, transactionDate, place, description) values(?, ?, ?, ?, ?, ?, ?)");
 }
 
-QVariant DataBase::addTransaction(QSqlQuery &q, const QVariant &usergives, const QVariant &userreceives, const QVariant &event, double amount, const QDate &transactionDate, const QString &place, const QString &description)
+QVariant DataBase::addTransaction(QSqlQuery &q, Transaction newTransaction)
 {
-    q.addBindValue(usergives);
-    q.addBindValue(userreceives);
-    q.addBindValue(event);
-    q.addBindValue(amount);
-    q.addBindValue(transactionDate);
-    q.addBindValue(place);
-    q.addBindValue(description);
+    q.addBindValue(QVariant(newTransaction.getUserGiving().getId()));
+    q.addBindValue(QVariant(newTransaction.getUserReceiving().getId()));
+    q.addBindValue(QVariant(newTransaction.getEvent().getId()));
+    q.addBindValue(newTransaction.getAmount());
+    q.addBindValue(newTransaction.getDate());
+    q.addBindValue(newTransaction.getPlace());
+    q.addBindValue(newTransaction.getDescription());
     q.exec();
     return q.lastInsertId();
 }
 
 
-QVariant DataBase::addEvent(QSqlQuery &q, const QString &name, const QDate &start, const QDate &end, const QString &place, const QString &description, int finished, const QVariant &admin)
+QVariant DataBase::addEvent(QSqlQuery &q, Event newEvent)
 {
-    q.addBindValue(name);
-    q.addBindValue(start);
-    q.addBindValue(end);
-    q.addBindValue(place);
-    q.addBindValue(description);
-    q.addBindValue(finished);
-    q.addBindValue(admin);
+    q.addBindValue(newEvent.getName());
+    q.addBindValue(newEvent.getStartDate());
+    q.addBindValue(newEvent.getEndDate());
+    q.addBindValue(newEvent.getPlace());
+    q.addBindValue(newEvent.getDescription());
+    q.addBindValue(newEvent.isFinished());
+    q.addBindValue(QVariant(newEvent.getAdmin().getId()));
     q.exec();
     return q.lastInsertId();
 }
 
-QVariant DataBase::addUser(QSqlQuery &q, const QString &name, const QString &nick, const QDate &birthdate)
+QVariant DataBase::addUser(QSqlQuery &q, User newUser)
 {
-    q.addBindValue(name);
-    q.addBindValue(nick);
-    q.addBindValue(birthdate);
+    q.addBindValue(newUser.getName());
+    q.addBindValue(newUser.getNickname());
+    q.addBindValue(newUser.getBirthdate());
     q.exec();
     return q.lastInsertId();
 }
+
 
 QSqlError DataBase::deleteTransaction(int transactionId)
 {

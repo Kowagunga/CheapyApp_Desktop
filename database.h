@@ -11,9 +11,9 @@ public:
     DataBase();
     int getKittyId();
     QSqlError getLastError();
-    QVariant addTransaction(QSqlQuery &q, const QVariant &usergives, const QVariant &userreceives, const QVariant &event, double amount, const QDate &transactionDate, const QString &place, const QString &description);
-    QVariant addEvent(QSqlQuery &q, const QString &name, const QDate &start, const QDate &end, const QString &place, const QString &description, int finished, const QVariant &admin);
-    QVariant addUser(QSqlQuery &q, const QString &name, const QString &nick, const QDate &birthdate);
+    QVariant addTransaction(QSqlQuery &q, Transaction newTransaction);
+    QVariant addEvent(QSqlQuery &q, Event newEvent);
+    QVariant addUser(QSqlQuery &q, User newUser);
     QSqlError deleteTransaction(int transactionId);
     QSqlError deleteEvent(int eventId);
     QSqlError deleteUser(int userId);

@@ -244,7 +244,7 @@ void MainWindow::newUser()
             // save User
             QSqlQuery query;
             query.prepare(db.getInsertUserQuery());
-            db.addUser(query,leName->text(),leNickname->text(),deBirthday->date());
+            db.addUser(query,User(leName->text(),leNickname->text(),deBirthday->date()));
             if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
@@ -307,7 +307,7 @@ void MainWindow::newEvent()
             // save Event
             QSqlQuery query;
             query.prepare(db.getInsertEventQuery());
-            db.addEvent(query, leName->text(), deStart->date(), deEnd->date(), lePlace->text(), leDescription->text(), 0, QVariant(getIdFromCmb(cmbAdmin)));
+            db.addEvent(query, Event(leName->text(), deStart->date(), deEnd->date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
             if(ui->rbEvents->isChecked())
                 ui->rbEvents->click();
         }
@@ -377,8 +377,8 @@ void MainWindow::newTransaction()
             // save Transaction
             QSqlQuery query;
             query.prepare(db.getInsertTransactionQuery());
-            db.addTransaction(query, QVariant(getIdFromCmb(cmbUserGives)), QVariant(getIdFromCmb(cmbUserReceives)), QVariant(getIdFromCmb(cmbEvents)),
-                           dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text());
+            db.addTransaction(query, Transaction(User(getIdFromCmb(cmbUserGives)), User(getIdFromCmb(cmbUserReceives)), Event(getIdFromCmb(cmbEvents)),
+                           dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text()));
             if(ui->rbKittyTransactions->isChecked())
                 ui->rbKittyTransactions->click();
             if(ui->rbPersonalTransactions->isChecked())
