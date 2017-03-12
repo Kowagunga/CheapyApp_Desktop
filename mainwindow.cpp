@@ -219,6 +219,8 @@ void MainWindow::newUser()
     form.addRow("Nickname*:", leNickname);
     QDateEdit *deBirthday = new QDateEdit(&dialog);
     deBirthday->setDate(QDate(2000,1,1));
+    deBirthday->setDisplayFormat("dd.MM.yyyy");
+    deBirthday->setMaximumDate(QDateTime::currentDateTime().date());
     form.addRow("Birthday date:", deBirthday);
 
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
@@ -236,8 +238,6 @@ void MainWindow::newUser()
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
             problem = "The field 'Nickname' cannot be empty";
-        else if (deBirthday->date() > QDateTime::currentDateTime().date())
-            problem = "The birthday date cannot be in the future";
 
         if(problem == "")
         {
@@ -272,9 +272,11 @@ void MainWindow::newEvent()
     form.addRow("Name*:", leName);
     QDateEdit *deStart = new QDateEdit(&dialog);
     deStart->setDate(QDateTime::currentDateTime().date());
+    deStart->setDisplayFormat("dd.MM.yyyy");
     form.addRow("Start:", deStart);
     QDateEdit *deEnd = new QDateEdit(&dialog);
     deEnd->setDate(QDateTime::currentDateTime().date());
+    deEnd->setDisplayFormat("dd.MM.yyyy");
     form.addRow("End:", deEnd);
     QLineEdit *lePlace = new QLineEdit(&dialog);
     lePlace->setMaxLength(30);
@@ -347,6 +349,8 @@ void MainWindow::newTransaction()
     dsbAmount->setSuffix(" " + QString(QChar(8364)));
     QDateEdit *deTransactionDate = new QDateEdit(&dialog);
     deTransactionDate->setDate(QDateTime::currentDateTime().date());
+    deTransactionDate->setDisplayFormat("dd.MM.yyyy");
+    deTransactionDate->setMaximumDate(QDateTime::currentDateTime().date());
     form.addRow("Transaction date:", deTransactionDate);
     QLineEdit *lePlace = new QLineEdit(&dialog);
     lePlace->setMaxLength(30);
@@ -369,8 +373,7 @@ void MainWindow::newTransaction()
         QString problem;
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
-        else if (deTransactionDate->date() > QDateTime::currentDateTime().date()) // todo: date between start and end date from event
-            problem = "The transaction date cannot be in the future";
+        // todo: date between start and end date from event
 
         if(problem == "")
         {
