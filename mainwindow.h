@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QtWidgets>
 #include <QtSql>
+#include "database.h"
 
 namespace Ui {
 class MainWindow;
@@ -35,9 +36,9 @@ private slots:
 private:
     Ui::MainWindow *ui;
 
+    DataBase db;
     void showError(const QSqlError &err);
-    QSqlRelationalTableModel *model;
-    QSqlQueryModel *transactionModel;
+    QSqlRelationalTableModel *globalModel;
     void loadTransactions();
     int getIdFromCmb(QComboBox *cmbBox);
     void selectIdInCmb(QComboBox *cmbBox, int id);
