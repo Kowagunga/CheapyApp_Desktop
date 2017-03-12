@@ -17,7 +17,10 @@ public:
     QSqlError deleteTransaction(int transactionId);
     QSqlError deleteEvent(int eventId);
     QSqlError deleteUser(int userId);
-    void getUsersOfTransaction(int idTransaction, int *idUserGives, int *idUserReceives);
+    Transaction getTransaction(int id);
+    Event getEvent(int id);
+    User getUser(int id);
+
     int getNumEventsOfUser(int userId);
     int getNumTransactions(int userId = -1, int eventId = -1);
     double calcAmountKitty(int eventId);

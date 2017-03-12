@@ -38,8 +38,7 @@ private:
 
     DataBase db;
     void showError(const QSqlError &err);
-    QSqlRelationalTableModel *model;
-    QSqlQueryModel *transactionModel;
+    QSqlRelationalTableModel *globalModel;
     void loadTransactions();
     int getIdFromCmb(QComboBox *cmbBox);
     void selectIdInCmb(QComboBox *cmbBox, int id);

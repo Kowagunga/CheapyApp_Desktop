@@ -152,41 +152,86 @@ QSqlError DataBase::deleteUser(int userId)
         return QSqlError();
 }
 
-void DataBase::getUsersOfTransaction(int idTransaction, int *idUserGives, int *idUserReceives)
+Transaction DataBase::getTransaction(int id)
 {
-    QSqlQueryModel *transactionModel;
-    transactionModel = new QSqlQueryModel;
+    Transaction transaction;
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
 
-    transactionModel->setQuery("SELECT usergives, userreceives FROM transactions WHERE id = " + QString::number(idTransaction));
+    model->setQuery("SELECT * FROM transactions WHERE id = " + QString::number(id));
 
+    transaction = Transaction(id, User(model->data(model->index(0,1)).toInt()),
+        User(model->data(model->index(0,2)).toInt()),
+        Event(model->data(model->index(0,3)).toInt()),
+        model->data(model->index(0,4)).toDouble(),
+        model->data(model->index(0,5)).toDate(),
+        model->data(model->index(0,6)).toString(),
+        model->data(model->index(0,7)).toString());
 
-    *idUserGives = transactionModel->data(transactionModel->index(0,0)).toInt();
-    *idUserReceives = transactionModel->data(transactionModel->index(0,1)).toInt();
+    lastError = model->lastError();
 
-    lastError = transactionModel->lastError();
+    return transaction;
+}
+
+Event DataBase::getEvent(int id)
+{
+    Event event;
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
+
+    model->setQuery("SELECT * FROM events WHERE id = " + QString::number(id));
+
+    event = Event(id, model->data(model->index(0,1)).toString(),
+        model->data(model->index(0,2)).toDate(),
+        model->data(model->index(0,3)).toDate(),
+        User(model->data(model->index(0,4)).toInt()),
+        model->data(model->index(0,5)).toString(),
+        model->data(model->index(0,6)).toString(),
+        model->data(model->index(0,7)).toBool());
+
+    lastError = model->lastError();
+
+    return event;
+}
+
+User DataBase::getUser(int id)
+{
+    User user;
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
+
+    model->setQuery("SELECT * FROM users WHERE id = " + QString::number(id));
+
+    user = User(id, model->data(model->index(0,1)).toString(),
+        model->data(model->index(0,2)).toString(),
+        model->data(model->index(0,3)).toDate());
+
+    lastError = model->lastError();
+
+    return user;
 }
 
 int DataBase::getNumEventsOfUser(int userId)
 {
-    QSqlQueryModel *transactionModel;
-    transactionModel = new QSqlQueryModel;
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
     QString strQuery = "SELECT name FROM events WHERE ";
     strQuery.append("events.admin = " + QString::number(userId));
-    transactionModel->setQuery(strQuery);
+    model->setQuery(strQuery);
 
-    lastError = transactionModel->lastError();
+    lastError = model->lastError();
 
-    return transactionModel->rowCount();
+    return model->rowCount();
 }
 
 int DataBase::getNumTransactions(int userId, int eventId)
 {
-    QSqlQueryModel *transactionModel;
+    QSqlQueryModel *model;
 
     if(userId == -1 && eventId == -1)
         return 0;
 
-    transactionModel = new QSqlQueryModel;
+    model = new QSqlQueryModel;
     QString strQuery = "SELECT id FROM transactions WHERE ";
     if(eventId == -1)
         strQuery.append("transactions.userreceives = " + QString::number(userId) +
@@ -197,31 +242,31 @@ int DataBase::getNumTransactions(int userId, int eventId)
         strQuery.append(" transactions.eventId = " + QString::number(eventId) +
                         " AND (transactions.userreceives = " + QString::number(userId) +
                         " OR transactions.usergives = " + QString::number(userId) + ")");
-    transactionModel->setQuery(strQuery);
+    model->setQuery(strQuery);
 
-    lastError = transactionModel->lastError();
+    lastError = model->lastError();
 
-    return transactionModel->rowCount();
+    return model->rowCount();
 }
 
 double DataBase::calcAmountKitty(int eventId)
 {
-    QSqlQueryModel *transactionModel;
-    transactionModel = new QSqlQueryModel;
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
 
-    transactionModel->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
+    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
                                " AND transactions.userreceives = " + QString::number(kittyId));
 
-    lastError = transactionModel->lastError();
+    lastError = model->lastError();
 
-    return transactionModel->data(transactionModel->index(0,0)).toDouble();
+    return model->data(model->index(0,0)).toDouble();
 }
 
 int DataBase::calcNumUsers(int eventId)
 {
-    QSqlQueryModel *transactionModel;
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT nickname FROM users WHERE users.id IS NOT " + QString::number(kittyId) +
+    QSqlQueryModel *model;
+    model = new QSqlQueryModel;
+    model->setQuery("SELECT nickname FROM users WHERE users.id IS NOT " + QString::number(kittyId) +
                                " AND (users.id IN "
                                     "(SELECT usergives FROM transactions WHERE transactions.event = "
                                         + QString::number(eventId) + ")" +
@@ -229,7 +274,7 @@ int DataBase::calcNumUsers(int eventId)
                                     "(SELECT userreceives FROM transactions WHERE transactions.event = "
                                         + QString::number(eventId) + "))");
 
-    lastError = transactionModel->lastError();
+    lastError = model->lastError();
 
-    return transactionModel->rowCount();
+    return model->rowCount();
 }

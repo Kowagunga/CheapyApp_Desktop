@@ -2,6 +2,7 @@
 #define DBCLASSES_H
 
 #include <QtCore>
+#include <iostream>
 
 class User
 {
@@ -16,14 +17,13 @@ public:
     QDate getBirthdate() const {return birthdate;}
     int getAge();
 
-    operator std::string() const
-    {
+    operator QString() const {
         QString result;
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", ").append(nickname);
         result.append(", ").append(birthdate.toString("dd.MM.yyyy"));
-        return result.toUtf8().constData();
+        return result;
     }
 
 private:
@@ -50,15 +50,18 @@ public:
     bool isFinished() const {return finished;}
     void setFinished(bool finished = true) {this->finished = finished;}
 
-    operator std::string() const
-    {
+    operator QString() const {
         QString result;
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", at ").append(place);
         result.append(", from ").append(startDate.toString("dd.MM.yyyy"));
-        result.append(", by ").append(admin.getNickname());
-        return result.toUtf8().constData();
+        result.append(", by ");
+        if(admin.getNickname() == "")
+            result.append(admin.getNickname());
+        else
+            result.append(QString::number(admin.getId()));
+        return result;
     }
 
 private:
@@ -89,16 +92,27 @@ public:
     QString getPlace() const {return place;}
     QString getDescription() const {return description;}
 
-    operator std::string() const
-    {
+    operator QString() const {
         QString result;
         result = QString::number(id);
-        result.append(", ").append(userGiving.getNickname());
+        result.append(", ");
+        if(userGiving.getNickname() == "")
+            result.append(QString::number(userGiving.getId()));
+        else
+            result.append(userGiving.getNickname());
         result.append(" payed ").append(QString::number(amount, 'g', 2));
-        result.append(" to ").append(userReceiving.getNickname());
+        result.append(" to ");
+        if(userReceiving.getNickname() == "")
+            result.append(QString::number(userReceiving.getId()));
+        else
+            result.append(userReceiving.getNickname());
         result.append(" on ").append(date.toString("dd.MM.yyyy"));
-        result.append(" for ").append(event.getName());
-        return result.toUtf8().constData();
+        result.append(" for ");
+        if(event.getName() == "")
+            result.append(QString::number(event.getId()));
+        else
+            result.append(event.getName());
+        return result;
     }
 
 private:

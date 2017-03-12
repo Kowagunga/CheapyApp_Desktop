@@ -64,7 +64,7 @@ void MainWindow::showTable()
         loadEventsToTable(ui->tvTable);
 
         ui->tvTable->setEditTriggers(0);
-        ui->tvTable->setColumnHidden(model->fieldIndex("id"), true);
+        ui->tvTable->setColumnHidden(globalModel->fieldIndex("id"), true);
         ui->tvTable->setSelectionMode(QAbstractItemView::SingleSelection);
     }
     else if(sender() == ui->rbUsers)
@@ -72,7 +72,7 @@ void MainWindow::showTable()
         loadUsersToTable(ui->tvTable);
 
         ui->tvTable->setEditTriggers(0);
-        ui->tvTable->setColumnHidden(model->fieldIndex("id"), true);
+        ui->tvTable->setColumnHidden(globalModel->fieldIndex("id"), true);
         ui->tvTable->setSelectionMode(QAbstractItemView::SingleSelection);
     }
     else if(sender() == ui->rbKittyTransactions)
@@ -98,14 +98,14 @@ void MainWindow::showTable()
 void MainWindow::loadTransactions()
 {
     // Create the data model
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT name, id FROM events WHERE events.id IN (SELECT event FROM transactions) GROUP BY name");
+    QSqlQueryModel *model = new QSqlQueryModel;
+    model->setQuery("SELECT name, id FROM events WHERE events.id IN (SELECT event FROM transactions) GROUP BY name");
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
     bool oldState = ui->cmbEvent->blockSignals(true);
-    ui->cmbEvent->setModel(transactionModel);
+    ui->cmbEvent->setModel(model);
     ui->cmbEvent->blockSignals(oldState);
 
     updateTransactionUserGiving();
@@ -116,21 +116,21 @@ void MainWindow::updateTransactionUserGiving()
     int eventId = getIdFromCmb(ui->cmbEvent);
 
     // Create the data model
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT nickname, id FROM users WHERE users.id IN "
+    QSqlQueryModel *model = new QSqlQueryModel;
+    model->setQuery("SELECT nickname, id FROM users WHERE users.id IN "
                                 "(SELECT usergives FROM transactions WHERE transactions.event = " + QString::number(eventId) +
                                 ") GROUP BY nickname");
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
     bool oldState = ui->cmbUserGives->blockSignals(true);
-    ui->cmbUserGives->setModel(transactionModel);
+    ui->cmbUserGives->setModel(model);
     ui->cmbUserGives->blockSignals(oldState);
 
     loadTransactionsToTable(ui->tvEventTransactions, true, true, QString("event = " + QString::number(eventId)));
 
-    ui->tvEventTransactions->setColumnHidden(model->fieldIndex("Event Name"), true);
+    ui->tvEventTransactions->setColumnHidden(globalModel->fieldIndex("Event Name"), true);
     ui->tvEventTransactions->setSelectionMode(QAbstractItemView::SingleSelection);
     ui->tvEventTransactions->setSelectionBehavior(QAbstractItemView::SelectRows);
 
@@ -152,16 +152,16 @@ void MainWindow::updateTransactionUserReceiving()
     int userGivingId = getIdFromCmb(ui->cmbUserGives);
 
     // Create the data model
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT nickname, id FROM users WHERE users.id IN "
+    QSqlQueryModel *model = new QSqlQueryModel;
+    model->setQuery("SELECT nickname, id FROM users WHERE users.id IN "
                                 "(SELECT userreceives FROM transactions WHERE transactions.usergives = " + QString::number(userGivingId) +
                                 " AND transactions.event = " + QString::number(eventId) + ") GROUP BY nickname");
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
     bool oldState = ui->cmbUserReceives->blockSignals(true);
-    ui->cmbUserReceives->setModel(transactionModel);
+    ui->cmbUserReceives->setModel(model);
     ui->cmbUserReceives->blockSignals(oldState);
 
     updateTransactionAmount();
@@ -174,26 +174,26 @@ void MainWindow::updateTransactionAmount()
     int userReceivingId = getIdFromCmb(ui->cmbUserReceives);
 
     // Create the data model
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
+    QSqlQueryModel *model = new QSqlQueryModel;
+    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
                                " AND transactions.usergives = " + QString::number(userGivingId) +
                                " AND transactions.userreceives = " + QString::number(userReceivingId));
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
-    double value = transactionModel->data(transactionModel->index(0,0)).toDouble();
+    double value = model->data(model->index(0,0)).toDouble();
 
     // Create the data model
-    transactionModel = new QSqlQueryModel;
-    transactionModel->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
+    model = new QSqlQueryModel;
+    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
                                " AND transactions.usergives = " + QString::number(userReceivingId) +
                                " AND transactions.userreceives = " + QString::number(userGivingId));
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
-    value -= transactionModel->data(transactionModel->index(0,0)).toDouble();
+    value -= model->data(model->index(0,0)).toDouble();
 
     ui->dsbAmount->setValue(value);
 
@@ -507,7 +507,7 @@ void MainWindow::deleteTransaction()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        int idTransaction = model->data(model->index(tvTransactions->currentIndex().row(),0)).toInt();
+        int idTransaction = globalModel->data(globalModel->index(tvTransactions->currentIndex().row(),0)).toInt();
         db.deleteTransaction(idTransaction);
         if(ui->rbKittyTransactions->isChecked())
             ui->rbKittyTransactions->click();
@@ -531,11 +531,12 @@ void MainWindow::selectTransaction(QModelIndex index)
     int row = index.row();
     QAbstractItemModel *model = ui->tvEventTransactions->model();
     int transactionId = model->data(model->index(row,0)).toInt();
-    int userGives, userReceives;
-    db.getUsersOfTransaction(transactionId, &userGives, &userReceives);
+    Transaction selectedTransaction = db.getTransaction(transactionId);
 
-    selectIdInCmb(ui->cmbUserGives, userGives);
-    selectIdInCmb(ui->cmbUserReceives, userReceives);
+    selectIdInCmb(ui->cmbUserGives, selectedTransaction.getUserGiving().getId());
+    selectIdInCmb(ui->cmbUserReceives, selectedTransaction.getUserReceiving().getId());
+
+    qDebug() << "selectedTransaction()" << selectedTransaction;
 }
 
 //_____Helpers_____
@@ -593,7 +594,7 @@ void MainWindow::selectRowInTransactionTable(QTableView *tableView, QString user
 void MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition)
 {
     // Create the data model
-    transactionModel = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT nickname, id FROM users";
     if(!includeKitty)
         strQuery.append(" WHERE users.id IS NOT " + QString::number(db.getKittyId()));
@@ -602,48 +603,48 @@ void MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString co
     if(condition!="" && includeKitty)
         strQuery.append(" WHERE " + condition);
 
-    transactionModel->setQuery(strQuery);
+    model->setQuery(strQuery);
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
-    cmbBox->setModel(transactionModel);
+    cmbBox->setModel(model);
 }
 
 void MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
 {
     // Create the data model
-    transactionModel = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT name, id FROM events";
     if(condition!="")
         strQuery.append(" WHERE " + condition);
 
-    transactionModel->setQuery(strQuery);
+    model->setQuery(strQuery);
 
-    if(transactionModel->rowCount() == 0)
-        showError(transactionModel->lastError());
+    if(model->rowCount() == 0)
+        showError(model->lastError());
 
-    cmbBox->setModel(transactionModel);
+    cmbBox->setModel(model);
 }
 
 void MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, bool showPersonal, QString condition)
 {
     // Create the data model
-    model = new QSqlRelationalTableModel(tableView);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->setTable("transactions");
+    globalModel = new QSqlRelationalTableModel(tableView);
+    globalModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    globalModel->setTable("transactions");
     // Set the relations to the other database tables
-    model->setRelation(model->fieldIndex("usergives"), QSqlRelation("users", "id", "nickname"));
-    model->setRelation(model->fieldIndex("userreceives"), QSqlRelation("users", "id", "nickname"));
-    model->setRelation(model->fieldIndex("event"), QSqlRelation("events", "id", "name"));
+    globalModel->setRelation(globalModel->fieldIndex("usergives"), QSqlRelation("users", "id", "nickname"));
+    globalModel->setRelation(globalModel->fieldIndex("userreceives"), QSqlRelation("users", "id", "nickname"));
+    globalModel->setRelation(globalModel->fieldIndex("event"), QSqlRelation("events", "id", "name"));
     // Set the localized header captions
-    model->setHeaderData(model->fieldIndex("usergives"), Qt::Horizontal, tr("Giving user"));
-    model->setHeaderData(model->fieldIndex("userreceives"), Qt::Horizontal, tr("Receiving user"));
-    model->setHeaderData(model->fieldIndex("event"), Qt::Horizontal, tr("Event Name"));
-    model->setHeaderData(model->fieldIndex("amount"), Qt::Horizontal, tr("Amount"));
-    model->setHeaderData(model->fieldIndex("transactionDate"), Qt::Horizontal, tr("Transaction Date"));
-    model->setHeaderData(model->fieldIndex("place"), Qt::Horizontal, tr("Place"));
-    model->setHeaderData(model->fieldIndex("description"), Qt::Horizontal, tr("Description"));
+    globalModel->setHeaderData(globalModel->fieldIndex("usergives"), Qt::Horizontal, tr("Giving user"));
+    globalModel->setHeaderData(globalModel->fieldIndex("userreceives"), Qt::Horizontal, tr("Receiving user"));
+    globalModel->setHeaderData(globalModel->fieldIndex("event"), Qt::Horizontal, tr("Event Name"));
+    globalModel->setHeaderData(globalModel->fieldIndex("amount"), Qt::Horizontal, tr("Amount"));
+    globalModel->setHeaderData(globalModel->fieldIndex("transactionDate"), Qt::Horizontal, tr("Transaction Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
+    globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
 
     QString filter;
     if(showKitty && !showPersonal)
@@ -666,30 +667,30 @@ void MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
         else
             filter.append(" AND (" + condition + ")");
     }
-    model->setFilter(filter);
+    globalModel->setFilter(filter);
 
     // Populate the model
-    if (!model->select()) {
-        showError(model->lastError());
+    if (!globalModel->select()) {
+        showError(globalModel->lastError());
         return;
     }
-    tableView->setModel(model);
+    tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
-    tableView->setColumnHidden(model->fieldIndex("id"), true);
-    tableView->setCurrentIndex(model->index(0, 0));
+    tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
+    tableView->setCurrentIndex(globalModel->index(0, 0));
 }
 
 void MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
 {
     // Create the data model
-    model = new QSqlRelationalTableModel(tableView);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->setTable("users");
+    globalModel = new QSqlRelationalTableModel(tableView);
+    globalModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    globalModel->setTable("users");
 
     // Set the localized header captions
-    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("User Name"));
-    model->setHeaderData(model->fieldIndex("nickname"), Qt::Horizontal, tr("Nickname"));
-    model->setHeaderData(model->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("User Name"));
+    globalModel->setHeaderData(globalModel->fieldIndex("nickname"), Qt::Horizontal, tr("Nickname"));
+    globalModel->setHeaderData(globalModel->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
 
     QString filter;
     filter = "id IS NOT " + QString::number(db.getKittyId());
@@ -698,52 +699,52 @@ void MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     {
         filter.append(" AND ").append(condition);
     }
-    model->setFilter(filter);
+    globalModel->setFilter(filter);
 
     // Populate the model
-    if (!model->select()) {
-        showError(model->lastError());
+    if (!globalModel->select()) {
+        showError(globalModel->lastError());
         return;
     }
-    tableView->setModel(model);
+    tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
-    tableView->setColumnHidden(model->fieldIndex("id"), true);
-    tableView->setCurrentIndex(model->index(0, 0));
+    tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
+    tableView->setCurrentIndex(globalModel->index(0, 0));
 }
 
 void MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
 {
     // Create the data model
-    model = new QSqlRelationalTableModel(tableView);
-    model->setEditStrategy(QSqlTableModel::OnManualSubmit);
-    model->setTable("events");
+    globalModel = new QSqlRelationalTableModel(tableView);
+    globalModel->setEditStrategy(QSqlTableModel::OnManualSubmit);
+    globalModel->setTable("events");
 
     // Set the relations to the other database tables
-    model->setRelation(model->fieldIndex("admin"), QSqlRelation("users", "id", "nickname"));
+    globalModel->setRelation(globalModel->fieldIndex("admin"), QSqlRelation("users", "id", "nickname"));
 
     // Set the localized header captions
-    model->setHeaderData(model->fieldIndex("name"), Qt::Horizontal, tr("Event Name"));
-    model->setHeaderData(model->fieldIndex("start"), Qt::Horizontal, tr("Start Date"));
-    model->setHeaderData(model->fieldIndex("end"), Qt::Horizontal, tr("End Date"));
-    model->setHeaderData(model->fieldIndex("place"), Qt::Horizontal, tr("Place"));
-    model->setHeaderData(model->fieldIndex("description"), Qt::Horizontal, tr("Description"));
-    model->setHeaderData(model->fieldIndex("finished"), Qt::Horizontal, tr("Finished?"));
-    model->setHeaderData(model->fieldIndex("admin"), Qt::Horizontal, tr("Administrator"));
+    globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("Event Name"));
+    globalModel->setHeaderData(globalModel->fieldIndex("start"), Qt::Horizontal, tr("Start Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("end"), Qt::Horizontal, tr("End Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
+    globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
+    globalModel->setHeaderData(globalModel->fieldIndex("finished"), Qt::Horizontal, tr("Finished?"));
+    globalModel->setHeaderData(globalModel->fieldIndex("admin"), Qt::Horizontal, tr("Administrator"));
 
     QString filter;
     if(condition != "")
     {
         filter = condition;
     }
-    model->setFilter(filter);
+    globalModel->setFilter(filter);
 
     // Populate the model
-    if (!model->select()) {
-        showError(model->lastError());
+    if (!globalModel->select()) {
+        showError(globalModel->lastError());
         return;
     }
-    tableView->setModel(model);
+    tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
-    tableView->setColumnHidden(model->fieldIndex("id"), true);
-    tableView->setCurrentIndex(model->index(0, 0));
+    tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
+    tableView->setCurrentIndex(globalModel->index(0, 0));
 }
