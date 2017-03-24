@@ -1,20 +1,32 @@
 #include "database.h"
 
+/*!
+ * Database constructor
+ */
 DataBase::DataBase()
 {
     lastError = init();
 }
 
+/*!
+ * Returns id of the kitty
+ */
 int DataBase::getKittyId()
 {
     return kittyId;
 }
 
+/*!
+ * Returns last sql error
+ */
 QSqlError DataBase::getLastError()
 {
     return lastError;
 }
 
+/*!
+ * Initializes the database
+ */
 QSqlError DataBase::init()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
@@ -85,6 +97,9 @@ QLatin1String DataBase::getInsertTransactionQuery()
     return QLatin1String("insert into transactions(usergives, userreceives, event, amount, transactionDate, place, description) values(?, ?, ?, ?, ?, ?, ?)");
 }
 
+/*!
+ * Inserts new transaction into the database
+ */
 QVariant DataBase::addTransaction(QSqlQuery &q, Transaction newTransaction)
 {
     q.addBindValue(QVariant(newTransaction.getUserGiving().getId()));
@@ -98,7 +113,9 @@ QVariant DataBase::addTransaction(QSqlQuery &q, Transaction newTransaction)
     return q.lastInsertId();
 }
 
-
+/*!
+ * Inserts new event into the database
+ */
 QVariant DataBase::addEvent(QSqlQuery &q, Event newEvent)
 {
     q.addBindValue(newEvent.getName());
@@ -112,6 +129,9 @@ QVariant DataBase::addEvent(QSqlQuery &q, Event newEvent)
     return q.lastInsertId();
 }
 
+/*!
+ * Inserts new user into the database
+ */
 QVariant DataBase::addUser(QSqlQuery &q, User newUser)
 {
     q.addBindValue(newUser.getName());
@@ -121,7 +141,9 @@ QVariant DataBase::addUser(QSqlQuery &q, User newUser)
     return q.lastInsertId();
 }
 
-
+/*!
+ * Deletes transaction from the database
+ */
 QSqlError DataBase::deleteTransaction(int transactionId)
 {
     QSqlQuery q;
@@ -132,6 +154,9 @@ QSqlError DataBase::deleteTransaction(int transactionId)
         return QSqlError();
 }
 
+/*!
+ * Deletes event from the database
+ */
 QSqlError DataBase::deleteEvent(int eventId)
 {
     QSqlQuery q;
@@ -142,6 +167,9 @@ QSqlError DataBase::deleteEvent(int eventId)
         return QSqlError();
 }
 
+/*!
+ * Deletes user from the database
+ */
 QSqlError DataBase::deleteUser(int userId)
 {
     QSqlQuery q;
@@ -152,6 +180,9 @@ QSqlError DataBase::deleteUser(int userId)
         return QSqlError();
 }
 
+/*!
+ * Returns transaction for an id from the database
+ */
 Transaction DataBase::getTransaction(int id)
 {
     Transaction transaction;
@@ -173,6 +204,9 @@ Transaction DataBase::getTransaction(int id)
     return transaction;
 }
 
+/*!
+ * Returns event for an id from the database
+ */
 Event DataBase::getEvent(int id)
 {
     Event event;
@@ -194,6 +228,9 @@ Event DataBase::getEvent(int id)
     return event;
 }
 
+/*!
+ * Returns user for an id from the database
+ */
 User DataBase::getUser(int id)
 {
     User user;
@@ -211,6 +248,9 @@ User DataBase::getUser(int id)
     return user;
 }
 
+/*!
+ * Returns how many events a user is taking part in
+ */
 int DataBase::getNumEventsOfUser(int userId)
 {
     QSqlQueryModel *model;
@@ -224,6 +264,9 @@ int DataBase::getNumEventsOfUser(int userId)
     return model->rowCount();
 }
 
+/*!
+ * Returns how many transactions does a user and/or an event have
+ */
 int DataBase::getNumTransactions(int userId, int eventId)
 {
     QSqlQueryModel *model;
@@ -249,6 +292,9 @@ int DataBase::getNumTransactions(int userId, int eventId)
     return model->rowCount();
 }
 
+/*!
+ * Calculates the total amount of the Kitty for an event
+ */
 double DataBase::calcAmountKitty(int eventId)
 {
     QSqlQueryModel *model;
@@ -262,6 +308,9 @@ double DataBase::calcAmountKitty(int eventId)
     return model->data(model->index(0,0)).toDouble();
 }
 
+/*!
+ * Returns the number of users with transactions in an event
+ */
 int DataBase::calcNumUsers(int eventId)
 {
     QSqlQueryModel *model;

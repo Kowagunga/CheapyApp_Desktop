@@ -35,3 +35,7 @@ Makefile*
 
 # QtCtreator CMake
 CMakeLists.txt.user*
+
+# Doxygen
+doxygen/*
+!doxygen/CheapyApp_Documentation.doxy

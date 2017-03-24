@@ -1,5 +1,8 @@
 #include "dbclasses.h"
 
+/*!
+ * Empty User constructor
+ */
 User::User()
 {
     this->id = -1;
@@ -8,6 +11,11 @@ User::User()
     this->birthdate = QDate();
 }
 
+/*!
+ * User constructor that requires id.
+ *
+ * The other parameters can be given, but are not required.
+ */
 User::User(int id, QString name, QString nickname, QDate birthdate)
 {
     this->id = id;
@@ -16,6 +24,12 @@ User::User(int id, QString name, QString nickname, QDate birthdate)
     this->birthdate = birthdate;
 }
 
+/*!
+ * User constructor without an id.
+ *
+ * All parameters are required. After inserting in the database, the
+ * resulting id can be set with \sa User::setId(int id)
+ */
 User::User(QString name, QString nickname, QDate birthdate)
 {
     this->id = -1;
@@ -24,6 +38,9 @@ User::User(QString name, QString nickname, QDate birthdate)
     this->birthdate = birthdate;
 }
 
+/*!
+ * Returns the current age of the user in complete years
+ */
 int User::getAge()
 {
     QDate currentDate = QDate::currentDate();
@@ -40,6 +57,9 @@ int User::getAge()
     return currentAge;
 }
 
+/*!
+ * Empty Event constructor
+ */
 Event::Event()
 {
     this->id = -1;
@@ -52,6 +72,11 @@ Event::Event()
     this->finished = false;
 }
 
+/*!
+ * Event constructor that requires id.
+ *
+ * The other parameters can be given, but are not required.
+ */
 Event::Event(int id, QString name, QDate start, QDate end, User admin, QString place, QString description, bool finished)
 {
     this->id = id;
@@ -64,6 +89,12 @@ Event::Event(int id, QString name, QDate start, QDate end, User admin, QString p
     this->finished = finished;
 }
 
+/*!
+ * Event constructor without an id.
+ *
+ * All parameters are required. After inserting in the database, the
+ * resulting id can be set with \sa Event::setId(int id)
+ */
 Event::Event(QString name, QDate start, QDate end, User admin, QString place, QString description, bool finished)
 {
     this->id = -1;
@@ -76,6 +107,9 @@ Event::Event(QString name, QDate start, QDate end, User admin, QString place, QS
     this->finished = finished;
 }
 
+/*!
+ * Empty Transaction constructor
+ */
 Transaction::Transaction()
 {
     this->id = -1;
@@ -88,6 +122,11 @@ Transaction::Transaction()
     this->description = "";
 }
 
+/*!
+ * Transaction constructor that requires id.
+ *
+ * The other parameters can be given, but are not required.
+ */
 Transaction::Transaction(int id, User userGiving, User userReceiving, Event event, double amount, QDate date, QString place, QString description)
 {
     this->id = id;
@@ -100,6 +139,12 @@ Transaction::Transaction(int id, User userGiving, User userReceiving, Event even
     this->description = description;
 }
 
+/*!
+ * Transaction constructor without an id.
+ *
+ * All parameters are required. After inserting in the database, the
+ * resulting id can be set with \sa Transaction::setId(int id)
+ */
 Transaction::Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place, QString description)
 {
     this->id = -1;
