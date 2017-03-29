@@ -15,7 +15,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    this->setWindowTitle("CheapyApp");
+    QString windowTitle = "CheapyApp";
+    this->setWindowTitle(windowTitle);
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
         QMessageBox::critical(this, "Unable to load database", "This demo needs the SQLITE driver");
@@ -43,6 +44,7 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDeleteEvent, &QAction::triggered, this, &MainWindow::deleteEvent);
     connect(ui->actionDeleteUser, &QAction::triggered, this, &MainWindow::deleteUser);
     connect(ui->actionDeleteTransaction, &QAction::triggered, this, &MainWindow::deleteTransaction);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 
     connect(ui->tvEventTransactions, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectTransaction(QModelIndex)));
 }
@@ -561,6 +563,51 @@ void MainWindow::deleteTransaction()
             ui->rbPersonalTransactions->click();
         if(ui->tabWidget->currentIndex()==1)
             loadTransactions();
+    }
+}
+
+/*!
+ * Show About Dialog with information about this application (e.g. Version, Date, Author, License)
+ */
+void MainWindow::showAboutDialog()
+{
+    QDialog dialog(this);
+    QVBoxLayout layout(&dialog);
+
+    dialog.setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::WindowSystemMenuHint|Qt::WindowCloseButtonHint);
+    dialog.setWindowTitle("About CheapyApp");
+
+    QString title = "CheapyApp Version " + QString("%1.%2.%3").arg(VERSION_MAJOR).arg(VERSION_MINOR).arg(VERSION_BUILD);
+    QLabel *lblTitleAndVersion = new QLabel(title);
+    lblTitleAndVersion->setStyleSheet("QLabel { font-weight: bold }");
+    layout.addWidget(lblTitleAndVersion);
+
+    QString buildDate = QString::fromLocal8Bit(BUILDDATE);
+    QLabel *lblBuildDate = new QLabel("Built on: " + buildDate);
+    layout.addWidget(lblBuildDate);
+
+    QLabel *lblAuthor = new QLabel("Created by Kowagunga");
+    layout.addWidget(lblAuthor);
+
+    QLabel *lblLicense = new QLabel("Licensed under GNU General Public License v3.0");
+    layout.addWidget(lblLicense);
+
+    QLabel *lblGithub = new QLabel("Available at <a href=\"https://github.com/Kowagunga/CheapyApp_Desktop/\">Github</a>");
+    lblGithub->setTextFormat(Qt::RichText);
+    lblGithub->setTextInteractionFlags(Qt::TextBrowserInteraction);
+    lblGithub->setOpenExternalLinks(true);
+    layout.addWidget(lblGithub);
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok,
+                               Qt::Horizontal, &dialog);
+    layout.addWidget(&buttonBox);
+
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+
     }
 }
 

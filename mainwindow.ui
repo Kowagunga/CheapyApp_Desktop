@@ -231,8 +231,15 @@
     <addaction name="actionDeleteEvent"/>
     <addaction name="actionDeleteTransaction"/>
    </widget>
+   <widget class="QMenu" name="menuHelp">
+    <property name="title">
+     <string>Help</string>
+    </property>
+    <addaction name="actionAbout"/>
+   </widget>
    <addaction name="menuAdd"/>
    <addaction name="menuDelete"/>
+   <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
@@ -247,30 +254,53 @@
    <property name="text">
     <string>Event</string>
    </property>
+   <property name="toolTip">
+    <string>Add a new event</string>
+   </property>
   </action>
   <action name="actionAddUser">
    <property name="text">
     <string>User</string>
+   </property>
+   <property name="toolTip">
+    <string>Add a new user</string>
    </property>
   </action>
   <action name="actionAddTransaction">
    <property name="text">
     <string>Transaction</string>
    </property>
+   <property name="toolTip">
+    <string>Add a new transaction</string>
+   </property>
   </action>
   <action name="actionDeleteUser">
    <property name="text">
     <string>User</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete existing user</string>
    </property>
   </action>
   <action name="actionDeleteEvent">
    <property name="text">
     <string>Event</string>
    </property>
+   <property name="toolTip">
+    <string>Delete existing event</string>
+   </property>
   </action>
   <action name="actionDeleteTransaction">
    <property name="text">
     <string>Transaction</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete existing transaction</string>
+   </property>
+  </action>
+  <action name="actionAbout">
+   <property name="text">
+    <string>About CheapyApp...</string>
    </property>
   </action>
  </widget>

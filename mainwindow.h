@@ -38,6 +38,7 @@ private slots:
     void deleteUser(); //! \brief Delete an existing user chosen in a dialog
     void deleteEvent(); //! \brief Delete an existing event chosen in a dialog
     void deleteTransaction(); //! \brief Delete an existing transaction chosen in a dialog
+    void showAboutDialog(); //! \brief Show About Dialog with information about this app
     /*!
      * \brief Triggers an action when a tab is selected
      * \param index index of the current tab

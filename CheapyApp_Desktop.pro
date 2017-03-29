@@ -22,3 +22,22 @@ HEADERS  += mainwindow.h \
     dbclasses.h
 
 FORMS    += mainwindow.ui
+
+#Application version
+VERSION_MAJOR = 0
+VERSION_MINOR = 1
+VERSION_BUILD = 1
+
+DEFINES += "VERSION_MAJOR=$$VERSION_MAJOR"\
+       "VERSION_MINOR=$$VERSION_MINOR"\
+       "VERSION_BUILD=$$VERSION_BUILD"
+win32 {
+DEFINES += BUILDTIME=\\\"$$system('echo %time%')\\\"
+DEFINES += BUILDDATE=\\\"$$system('echo %date%')\\\"
+} else {
+DEFINES += BUILDTIME=\\\"$$system(date '+%H:%M.%s')\\\"
+DEFINES += BUILDDATE=\\\"$$system(date '+%d/%m/%y')\\\"
+}
+
+#Target version
+VERSION = $${VERSION_MAJOR}.$${VERSION_MINOR}.$${VERSION_BUILD}
