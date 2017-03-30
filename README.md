@@ -9,8 +9,6 @@ Desktop software written in C++/Qt for managing economic transactions among user
 
 ## General to-do list
 \todo
-* General
-    *  Support version numbers
 * Database
     *  Make database exportable
     *  Import database if file exists, otherwise initialize tables

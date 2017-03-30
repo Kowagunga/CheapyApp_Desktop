@@ -380,7 +380,7 @@ void MainWindow::newTransaction()
     QDoubleSpinBox *dsbAmount = new QDoubleSpinBox(&dialog);
     form.addRow("Amount:", dsbAmount);
     dsbAmount->setDecimals(2);
-    dsbAmount->setMinimum(-100000.00);
+    dsbAmount->setMinimum(0.00);
     dsbAmount->setMaximum(100000.00);
     dsbAmount->setSuffix(" " + QString(QChar(8364)));
     QDateEdit *deTransactionDate = new QDateEdit(&dialog);
