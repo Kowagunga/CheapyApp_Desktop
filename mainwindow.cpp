@@ -44,7 +44,11 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDeleteEvent, &QAction::triggered, this, &MainWindow::deleteEvent);
     connect(ui->actionDeleteUser, &QAction::triggered, this, &MainWindow::deleteUser);
     connect(ui->actionDeleteTransaction, &QAction::triggered, this, &MainWindow::deleteTransaction);
+    connect(ui->actionExampleDatabase, &QAction::triggered, this, &MainWindow::initExampleDatabase);
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
+
+    if(!db.isDatabaseEmpty())
+        ui->actionExampleDatabase->setEnabled(false);
 
     connect(ui->tvEventTransactions, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectTransaction(QModelIndex)));
 }
@@ -72,8 +76,6 @@ MainWindow::~MainWindow()
  */
 void MainWindow::showTable()
 {
-//    qDebug() << "MainWindow::ShowTable() - " << "Sender:" << sender()->objectName();
-
     if(sender() == ui->rbEvents)
     {
         loadEventsToTable(ui->tvTable);
@@ -262,12 +264,13 @@ void MainWindow::newUser()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // todo: check dialog before closing it
+        // \todo check dialog before closing it
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
             problem = "The field 'Nickname' cannot be empty";
+        // \todo check if nickname exists (set as secondary key?)
 
         if(problem == "")
         {
@@ -330,7 +333,7 @@ void MainWindow::newEvent()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // todo: check dialog before closing it
+        // \todo check dialog before closing it
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
@@ -405,11 +408,11 @@ void MainWindow::newTransaction()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // todo: check dialog before closing it
+        // \todo check dialog before closing it
         QString problem;
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
-        // todo: date between start and end date from event
+        // \todo date between start and end date from event
 
         if(problem == "")
         {
@@ -420,7 +423,7 @@ void MainWindow::newTransaction()
                            dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text()));
             if(ui->rbKittyTransactions->isChecked())
                 ui->rbKittyTransactions->click();
-            if(ui->rbPersonalTransactions->isChecked())
+            else if(ui->rbPersonalTransactions->isChecked())
                 ui->rbPersonalTransactions->click();
             if(ui->tabWidget->currentIndex()==1)
                 loadTransactions();
@@ -559,7 +562,7 @@ void MainWindow::deleteTransaction()
         db.deleteTransaction(idTransaction);
         if(ui->rbKittyTransactions->isChecked())
             ui->rbKittyTransactions->click();
-        if(ui->rbPersonalTransactions->isChecked())
+        else if(ui->rbPersonalTransactions->isChecked())
             ui->rbPersonalTransactions->click();
         if(ui->tabWidget->currentIndex()==1)
             loadTransactions();
@@ -609,6 +612,34 @@ void MainWindow::showAboutDialog()
     if (dialog.exec() == QDialog::Accepted) {
 
     }
+}
+
+/*!
+ * Trigger example data insertion to the database
+ */
+void MainWindow::initExampleDatabase()
+{
+    db.initExampleDatabase();
+
+    QMessageBox msgBox;
+    msgBox.setText("Example data inserted to the database");
+    msgBox.setIcon(QMessageBox::Information);
+    msgBox.exec();
+
+    ui->actionExampleDatabase->setEnabled(false);
+    if(ui->tabWidget->currentIndex()==1)
+    {
+        if(ui->rbKittyTransactions->isChecked())
+            ui->rbKittyTransactions->click();
+        else if(ui->rbPersonalTransactions->isChecked())
+            ui->rbPersonalTransactions->click();
+        else if(ui->rbUsers->isChecked())
+            ui->rbUsers->click();
+        else if(ui->rbEvents->isChecked())
+            ui->rbEvents->click();
+    }
+    else if(ui->tabWidget->currentIndex()==1)
+        loadTransactions();
 }
 
 //_____GUI Slots_____

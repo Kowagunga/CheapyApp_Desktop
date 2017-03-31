@@ -11,8 +11,18 @@ DataBase::DataBase()
 /*!
  * Returns id of the kitty
  */
-int DataBase::getKittyId()
+int DataBase::getKittyId(bool loadFromDb)
 {
+    if(loadFromDb)
+    {
+        QSqlQueryModel *model = new QSqlQueryModel;
+
+        model->setQuery("SELECT id FROM users WHERE nickname = 'Kitty'");
+
+        kittyId = model->data(model->index(0,0)).toInt();
+
+        lastError = model->lastError();
+    }
     return kittyId;
 }
 
@@ -30,33 +40,84 @@ QSqlError DataBase::getLastError()
 QSqlError DataBase::init()
 {
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
-    db.setDatabaseName(":memory:");
+
+    QString path;
+//    path.append(QDir::homePath()).append(QDir::separator()); \todo best path to store database?
+    path.append("CheapyApp.db3");
+    path = QDir::toNativeSeparators(path);
+    db.setDatabaseName(path);
 
     if (!db.open())
         return db.lastError();
 
     QStringList tables = db.tables();
     if (tables.contains("users", Qt::CaseInsensitive)
-        && tables.contains("events", Qt::CaseInsensitive))
+        && tables.contains("events", Qt::CaseInsensitive)
+        && tables.contains("transactions", Qt::CaseInsensitive))
+    {
+        kittyId = getKittyId(true);
         return QSqlError();
+    }
+    else
+    {
+        // \todo erase database in case it is an old version, or check version/integrity
+        QSqlQuery q;
+        if (!q.exec(QLatin1String("create table users(id integer primary key, name varchar, nickname integer, birthdate date)")))
+            return q.lastError();
+        if (!q.exec(QLatin1String("create table events(id integer primary key, name varchar, start date, end date, place varchar, description varchar, finished integer, admin integer)")))
+            return q.lastError();
+        if (!q.exec(QLatin1String("create table transactions(id integer primary key, usergives integer, userreceives integer, event integer, amount real, transactionDate date, place varchar, description varchar)")))
+            return q.lastError();
 
+        if (!q.prepare(getInsertUserQuery()))
+            return q.lastError();
+
+        User kitty = User(QLatin1String("Kitty"), QLatin1String("Kitty"), QDate(2000, 1, 1));
+        kitty.setId(addUser(q, kitty).toInt());
+
+        kittyId = kitty.getId();
+        return QSqlError();
+    }
+}
+
+/*!
+ * Check if the database has any entries (besides the kitty user)
+ */
+bool DataBase::isDatabaseEmpty()
+{
+    QSqlQueryModel *model = new QSqlQueryModel;
+
+    model->setQuery("SELECT COUNT(id) FROM users");
+    if(model->data(model->index(0,0)).toInt() != 1)
+        return false;
+
+    model->setQuery("SELECT COUNT(id) FROM events");
+    if(model->data(model->index(0,0)).toInt() != 0)
+        return false;
+
+    model->setQuery("SELECT COUNT(id) FROM transactions");
+    if(model->data(model->index(0,0)).toInt() != 0)
+        return false;
+
+    return true;
+}
+
+/*!
+ * Insert example data to the database
+ */
+QSqlError DataBase::initExampleDatabase()
+{
+    // \todo trigger only from GUI "initialize database with example data"
     QSqlQuery q;
-    if (!q.exec(QLatin1String("create table users(id integer primary key, name varchar, nickname integer, birthdate date)")))
-        return q.lastError();
-    if (!q.exec(QLatin1String("create table events(id integer primary key, name varchar, start date, end date, place varchar, description varchar, finished integer, admin integer)")))
-        return q.lastError();
-    if (!q.exec(QLatin1String("create table transactions(id integer primary key, usergives integer, userreceives integer, event integer, amount real, transactionDate date, place varchar, description varchar)")))
-        return q.lastError();
-
     if (!q.prepare(getInsertUserQuery()))
         return q.lastError();
 
-    User kitty = User(QLatin1String("Kitty"), QLatin1String("Kitty"), QDate(2000, 1, 1));
+    User kitty = getUser(kittyId);
+
     User bruno = User(QLatin1String("Bruno Santamaria"), QLatin1String("Kowagunga"), QDate(1989, 2, 14));
     User xavi = User(QLatin1String("Xavier Parareda"),  QLatin1String("X"), QDate(1989, 7, 30));
     User asustao = User(QLatin1String("Luis Lozano"),  QLatin1String("Asustao"), QDate(1989, 12, 20));
 
-    kitty.setId(addUser(q, kitty).toInt());
     bruno.setId(addUser(q, bruno).toInt());
     xavi.setId(addUser(q, xavi).toInt());
     asustao.setId(addUser(q, asustao).toInt());
@@ -78,7 +139,6 @@ QSqlError DataBase::init()
     addTransaction(q, Transaction(bruno, kitty, warsaw, 75.0, QDate(2016,9,3), QLatin1String("Warsaw"), QLatin1String("Cash Sunday")));
     addTransaction(q, Transaction(kitty, bruno, warsaw, 38.0, QDate(2016,9,5), QLatin1String("Warsaw"), QLatin1String("Cash back Monday")));
 
-    kittyId = kitty.getId();
     return QSqlError();
 }
 
@@ -186,8 +246,7 @@ QSqlError DataBase::deleteUser(int userId)
 Transaction DataBase::getTransaction(int id)
 {
     Transaction transaction;
-    QSqlQueryModel *model;
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
 
     model->setQuery("SELECT * FROM transactions WHERE id = " + QString::number(id));
 
@@ -234,8 +293,7 @@ Event DataBase::getEvent(int id)
 User DataBase::getUser(int id)
 {
     User user;
-    QSqlQueryModel *model;
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
 
     model->setQuery("SELECT * FROM users WHERE id = " + QString::number(id));
 
@@ -253,8 +311,7 @@ User DataBase::getUser(int id)
  */
 int DataBase::getNumEventsOfUser(int userId)
 {
-    QSqlQueryModel *model;
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT name FROM events WHERE ";
     strQuery.append("events.admin = " + QString::number(userId));
     model->setQuery(strQuery);
@@ -269,12 +326,10 @@ int DataBase::getNumEventsOfUser(int userId)
  */
 int DataBase::getNumTransactions(int userId, int eventId)
 {
-    QSqlQueryModel *model;
-
     if(userId == -1 && eventId == -1)
         return 0;
 
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT id FROM transactions WHERE ";
     if(eventId == -1)
         strQuery.append("transactions.userreceives = " + QString::number(userId) +
@@ -297,8 +352,7 @@ int DataBase::getNumTransactions(int userId, int eventId)
  */
 double DataBase::calcAmountKitty(int eventId)
 {
-    QSqlQueryModel *model;
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
 
     model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
                                " AND transactions.userreceives = " + QString::number(kittyId));
@@ -313,8 +367,7 @@ double DataBase::calcAmountKitty(int eventId)
  */
 int DataBase::calcNumUsers(int eventId)
 {
-    QSqlQueryModel *model;
-    model = new QSqlQueryModel;
+    QSqlQueryModel *model = new QSqlQueryModel;
     model->setQuery("SELECT nickname FROM users WHERE users.id IS NOT " + QString::number(kittyId) +
                                " AND (users.id IN "
                                     "(SELECT usergives FROM transactions WHERE transactions.event = "

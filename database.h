@@ -13,14 +13,25 @@ public:
     DataBase();
     /*!
      * @brief Returns the id of the kitty
+     * @param loadFromDb if true, use a sql query to load it from the database.
      * @return kitty id
      */
-    int getKittyId();
+    int getKittyId(bool loadFromDb = false);
     /*!
      * @brief Returns the last occurred error in the database
      * @return database error of last query
      */
     QSqlError getLastError();
+    /*!
+     * @brief Insert example data to the database
+     * @return database error of last query
+     */
+    QSqlError initExampleDatabase();
+    /*!
+     * @brief Check if the database has any entries (besides the kitty user)
+     * @return true if neither of the tables has any entry (but the kitty user)
+     */
+    bool isDatabaseEmpty();
     /*!
      * @brief Adds transaction object to database
      * @param q New transaction query
