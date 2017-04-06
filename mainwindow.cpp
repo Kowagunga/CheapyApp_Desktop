@@ -121,7 +121,7 @@ void MainWindow::loadTransactions()
     model->setQuery("SELECT name, id FROM events WHERE events.id IN (SELECT event FROM transactions) GROUP BY name");
 
     if(model->rowCount() == 0)
-        showError(model->lastError());
+        return;
 
     bool oldState = ui->cmbEvent->blockSignals(true);
     ui->cmbEvent->setModel(model);
@@ -144,13 +144,22 @@ void MainWindow::updateTransactionUserGiving()
                                 ") GROUP BY nickname");
 
     if(model->rowCount() == 0)
-        showError(model->lastError());
+        return;
 
     bool oldState = ui->cmbUserGives->blockSignals(true);
     ui->cmbUserGives->setModel(model);
     ui->cmbUserGives->blockSignals(oldState);
 
-    loadTransactionsToTable(ui->tvEventTransactions, true, true, QString("event = " + QString::number(eventId)));
+    bool noTransactions = loadTransactionsToTable(ui->tvEventTransactions, true, true, QString("event = " + QString::number(eventId)));
+
+    if(noTransactions)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no transactions in the database.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
 
     ui->tvEventTransactions->setColumnHidden(globalModel->fieldIndex("Event Name"), true);
     ui->tvEventTransactions->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -183,7 +192,7 @@ void MainWindow::updateTransactionUserReceiving()
                                 " AND transactions.event = " + QString::number(eventId) + ") GROUP BY nickname");
 
     if(model->rowCount() == 0)
-        showError(model->lastError());
+        return;
 
     bool oldState = ui->cmbUserReceives->blockSignals(true);
     ui->cmbUserReceives->setModel(model);
@@ -202,6 +211,7 @@ void MainWindow::updateTransactionAmount()
     int eventId = getIdFromCmb(ui->cmbEvent);
     int userGivingId = getIdFromCmb(ui->cmbUserGives);
     int userReceivingId = getIdFromCmb(ui->cmbUserReceives);
+    double value = 0;
 
     // Create the data model
     QSqlQueryModel *model = new QSqlQueryModel;
@@ -209,10 +219,8 @@ void MainWindow::updateTransactionAmount()
                                " AND transactions.usergives = " + QString::number(userGivingId) +
                                " AND transactions.userreceives = " + QString::number(userReceivingId));
 
-    if(model->rowCount() == 0)
-        showError(model->lastError());
-
-    double value = model->data(model->index(0,0)).toDouble();
+    if(model->rowCount() != 0)
+        value  = model->data(model->index(0,0)).toDouble();
 
     // Create the data model
     model = new QSqlQueryModel;
@@ -220,10 +228,8 @@ void MainWindow::updateTransactionAmount()
                                " AND transactions.usergives = " + QString::number(userReceivingId) +
                                " AND transactions.userreceives = " + QString::number(userGivingId));
 
-    if(model->rowCount() == 0)
-        showError(model->lastError());
-
-    value -= model->data(model->index(0,0)).toDouble();
+    if(model->rowCount() != 0)
+        value -= model->data(model->index(0,0)).toDouble();
 
     ui->dsbAmount->setValue(value);
 
@@ -326,8 +332,17 @@ void MainWindow::newEvent()
     leDescription->setMaxLength(50);
     form.addRow("Description:", leDescription);
     QComboBox *cmbAdmin = new QComboBox(&dialog);
-    loadUsersToCmb(cmbAdmin,false,"");
+    bool noUsers = loadUsersToCmb(cmbAdmin,false,"");
     form.addRow("Admin:", cmbAdmin);
+
+    if(noUsers)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no users in the database. An event needs an administrator.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
 
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
@@ -381,10 +396,10 @@ void MainWindow::newTransaction()
     dialog.setWindowTitle("Create new transaction");
 
     QComboBox *cmbEvents = new QComboBox(&dialog);
-    loadEventsToCmb(cmbEvents,"");
+    bool noEvents = loadEventsToCmb(cmbEvents,"");
     form.addRow("Event:", cmbEvents);
     QComboBox *cmbUserGives = new QComboBox(&dialog);
-    loadUsersToCmb(cmbUserGives,true,"");
+    bool noUsers = loadUsersToCmb(cmbUserGives,true,"");
     form.addRow("User giving:", cmbUserGives);
     QComboBox *cmbUserReceives = new QComboBox(&dialog);
     loadUsersToCmb(cmbUserReceives,true,"");
@@ -406,6 +421,24 @@ void MainWindow::newTransaction()
     QLineEdit *leDescription = new QLineEdit(&dialog);
     leDescription->setMaxLength(50);
     form.addRow("Description:", leDescription);
+
+    if(noEvents)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no events in the database. A transaction needs a related event.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
+
+    if(noUsers)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no users in the database. A transaction needs a user.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
 
 
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
@@ -464,7 +497,17 @@ void MainWindow::deleteUser()
     dialog.setWindowTitle("Delete existing user");
 
     QComboBox *cmbUser = new QComboBox(&dialog);
-    loadUsersToCmb(cmbUser,false,"");
+    bool noUsers = loadUsersToCmb(cmbUser,false,"");
+
+    if(noUsers)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no users in the database.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
+
     form.addRow("User:", cmbUser);
 
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
@@ -513,7 +556,17 @@ void MainWindow::deleteEvent()
     dialog.setWindowTitle("Delete existing event");
 
     QComboBox *cmbEvent = new QComboBox(&dialog);
-    loadEventsToCmb(cmbEvent,"");
+    bool noEvents = loadEventsToCmb(cmbEvent,"");
+
+    if(noEvents)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no events in the database.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
+
     form.addRow("Event:", cmbEvent);
 
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
@@ -555,7 +608,17 @@ void MainWindow::deleteTransaction()
     dialog.setWindowTitle("Delete existing transaction");
 
     QTableView *tvTransactions = new QTableView(&dialog);
-    loadTransactionsToTable(tvTransactions, true, true);
+    bool noTransactions = loadTransactionsToTable(tvTransactions, true, true);
+
+    if(noTransactions)
+    {
+        QMessageBox msgBox;
+        msgBox.setText("There are no transactions in the database.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+        return;
+    }
+
     tvTransactions->setSelectionMode(QAbstractItemView::SingleSelection);
     tvTransactions->setSelectionBehavior(QAbstractItemView::SelectRows);
     tvTransactions->setEditTriggers(0);
@@ -744,7 +807,7 @@ void MainWindow::selectRowInTransactionTable(QTableView *tableView, QString user
 /*!
  * Load users from database as entries of a combo-box
  */
-void MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition)
+bool MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition)
 {
     // Create the data model
     QSqlQueryModel *model = new QSqlQueryModel;
@@ -758,16 +821,16 @@ void MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString co
 
     model->setQuery(strQuery);
 
-    if(model->rowCount() == 0)
-        showError(model->lastError());
+    if(model->rowCount() != 0)
+        cmbBox->setModel(model);
 
-    cmbBox->setModel(model);
+    return model->rowCount() == 0;
 }
 
 /*!
  * Load events from database as entries of a combo-box
  */
-void MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
+bool MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
 {
     // Create the data model
     QSqlQueryModel *model = new QSqlQueryModel;
@@ -777,16 +840,16 @@ void MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
 
     model->setQuery(strQuery);
 
-    if(model->rowCount() == 0)
-        showError(model->lastError());
+    if(model->rowCount() != 0)
+        cmbBox->setModel(model);
 
-    cmbBox->setModel(model);
+    return model->rowCount() == 0;
 }
 
 /*!
  * Load users from database to a table-view
  */
-void MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
+bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
 {
     // Create the data model
     globalModel = new QSqlRelationalTableModel(tableView);
@@ -810,18 +873,20 @@ void MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     // Populate the model
     if (!globalModel->select()) {
         showError(globalModel->lastError());
-        return;
+        return true;
     }
     tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
     tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
     tableView->setCurrentIndex(globalModel->index(0, 0));
+
+    return globalModel->rowCount() == 0;
 }
 
 /*!
  * Load events from database to a table-view
  */
-void MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
+bool MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
 {
     // Create the data model
     globalModel = new QSqlRelationalTableModel(tableView);
@@ -850,18 +915,20 @@ void MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
     // Populate the model
     if (!globalModel->select()) {
         showError(globalModel->lastError());
-        return;
+        return true;
     }
     tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
     tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
     tableView->setCurrentIndex(globalModel->index(0, 0));
+
+    return globalModel->rowCount() == 0;
 }
 
 /*!
  * Load transactions from database to a table-view
  */
-void MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, bool showPersonal, QString condition)
+bool MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, bool showPersonal, QString condition)
 {
     // Create the data model
     globalModel = new QSqlRelationalTableModel(tableView);
@@ -906,10 +973,12 @@ void MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     // Populate the model
     if (!globalModel->select()) {
         showError(globalModel->lastError());
-        return;
+        return true;
     }
     tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
     tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
     tableView->setCurrentIndex(globalModel->index(0, 0));
+
+    return globalModel->rowCount() == 0;
 }

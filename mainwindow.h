@@ -103,34 +103,39 @@ private:
      * \param cmbBox combo-box
      * \param includeKitty true if kitty should be shown as well
      * \param condition condition given to the query as "WHERE" clause
+     * \return true if query returns no results
      */
-    void loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition);
+    bool loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString condition);
     /*!
      * \brief Load events from database as entries of a combo-box
      * \param cmbBox combo-box
      * \param condition condition given to the query as "WHERE" clause
+     * \return true if query returns no results
      */
-    void loadEventsToCmb(QComboBox *cmbBox, QString condition);
+    bool loadEventsToCmb(QComboBox *cmbBox, QString condition);
     /*!
      * \brief Load users from database to a table-view
      * \param tableView table-view where data is going to be shown
      * \param condition condition given to the query as "WHERE" clause
+     * \return true if query returns no results
      */
-    void loadUsersToTable(QTableView *tableView, QString condition = "");
+    bool loadUsersToTable(QTableView *tableView, QString condition = "");
     /*!
      * \brief Load events from database to a table-view
      * \param tableView table-view where data is going to be shown
      * \param condition condition given to the query as "WHERE" clause
+     * \return true if query returns no results
      */
-    void loadEventsToTable(QTableView *tableView, QString condition = "");
+    bool loadEventsToTable(QTableView *tableView, QString condition = "");
     /*!
      * \brief Load transactions from database to a table-view
      * \param tableView table-view where data is going to be shown
      * \param showKitty true if transactions with kitty shouw be shown
      * \param showPersonal true if transactions between users should be shown
      * \param condition condition given to the query as "WHERE" clause
+     * \return true if query returns no results
      */
-    void loadTransactionsToTable(QTableView *tableView, bool showKitty = true, bool showPersonal = true, QString condition = "");
+    bool loadTransactionsToTable(QTableView *tableView, bool showKitty = true, bool showPersonal = true, QString condition = "");
 };
 
 #endif // MAINWINDOW_H
