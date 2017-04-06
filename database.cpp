@@ -42,10 +42,11 @@ QSqlError DataBase::init()
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
 
     QString path;
-//    path.append(QDir::homePath()).append(QDir::separator()); \todo best path to store database?
+//    path.append(QDir::homePath()).append(QDir::separator());
     path.append("CheapyApp.db3");
     path = QDir::toNativeSeparators(path);
     db.setDatabaseName(path);
+    //! \todo best path to store database?
 
     if (!db.open())
         return db.lastError();
@@ -55,18 +56,46 @@ QSqlError DataBase::init()
         && tables.contains("events", Qt::CaseInsensitive)
         && tables.contains("transactions", Qt::CaseInsensitive))
     {
+        qDebug() << "Database file present. Tables: " << db.tables();
+
         kittyId = getKittyId(true);
         return QSqlError();
     }
     else
     {
-        // \todo erase database in case it is an old version, or check version/integrity
+        //! \todo erase database in case it is an old version, or check version/integrity
         QSqlQuery q;
-        if (!q.exec(QLatin1String("create table users(id integer primary key, name varchar, nickname integer, birthdate date)")))
+
+        qDebug() << "No database file present. Creating tables...";
+
+        if (!q.exec(QLatin1String("create table users("
+                                      "id integer primary key, "
+                                      "name text, "
+                                      "nickname text not null unique, "
+                                      "birthdate date"
+                                  ")")))
             return q.lastError();
-        if (!q.exec(QLatin1String("create table events(id integer primary key, name varchar, start date, end date, place varchar, description varchar, finished integer, admin integer)")))
+        if (!q.exec(QLatin1String("create table events("
+                                      "id integer primary key, "
+                                      "name text not null, "
+                                      "start date, "
+                                      "end date, "
+                                      "place text, "
+                                      "description text, "
+                                      "finished integer not null, "
+                                      "admin integer references users(id)"
+                                  ")")))
             return q.lastError();
-        if (!q.exec(QLatin1String("create table transactions(id integer primary key, usergives integer, userreceives integer, event integer, amount real, transactionDate date, place varchar, description varchar)")))
+        if (!q.exec(QLatin1String("create table transactions("
+                                      "id integer primary key, "
+                                      "usergives integer references users(id), "
+                                      "userreceives integer references users(id), "
+                                      "event integer references events(id), "
+                                      "amount real not null, "
+                                      "transactionDate date, "
+                                      "place text, "
+                                      "description text"
+                                  ")")))
             return q.lastError();
 
         if (!q.prepare(getInsertUserQuery()))
@@ -107,7 +136,7 @@ bool DataBase::isDatabaseEmpty()
  */
 QSqlError DataBase::initExampleDatabase()
 {
-    // \todo trigger only from GUI "initialize database with example data"
+    //! \todo trigger only from GUI "initialize database with example data"
     QSqlQuery q;
     if (!q.prepare(getInsertUserQuery()))
         return q.lastError();
@@ -170,6 +199,7 @@ QVariant DataBase::addTransaction(QSqlQuery &q, Transaction newTransaction)
     q.addBindValue(newTransaction.getPlace());
     q.addBindValue(newTransaction.getDescription());
     q.exec();
+    lastError = q.lastError();
     return q.lastInsertId();
 }
 
@@ -186,6 +216,7 @@ QVariant DataBase::addEvent(QSqlQuery &q, Event newEvent)
     q.addBindValue(newEvent.isFinished());
     q.addBindValue(QVariant(newEvent.getAdmin().getId()));
     q.exec();
+    lastError = q.lastError();
     return q.lastInsertId();
 }
 
@@ -198,6 +229,7 @@ QVariant DataBase::addUser(QSqlQuery &q, User newUser)
     q.addBindValue(newUser.getNickname());
     q.addBindValue(newUser.getBirthdate());
     q.exec();
+    lastError = q.lastError();
     return q.lastInsertId();
 }
 
@@ -326,7 +358,7 @@ int DataBase::getNumEventsOfUser(int userId)
  */
 int DataBase::getNumTransactions(int userId, int eventId)
 {
-    if(userId == -1 && eventId == -1)
+    if(userId == -1 && eventId == -1)//! \todo return total number of transactions if no user nor event
         return 0;
 
     QSqlQueryModel *model = new QSqlQueryModel;
@@ -335,9 +367,9 @@ int DataBase::getNumTransactions(int userId, int eventId)
         strQuery.append("transactions.userreceives = " + QString::number(userId) +
                         " OR transactions.usergives = " + QString::number(userId));
     else if(userId == -1)
-        strQuery.append(" transactions.eventId = " + QString::number(eventId));
+        strQuery.append("transactions.event = " + QString::number(eventId));
     else
-        strQuery.append(" transactions.eventId = " + QString::number(eventId) +
+        strQuery.append("transactions.event = " + QString::number(eventId) +
                         " AND (transactions.userreceives = " + QString::number(userId) +
                         " OR transactions.usergives = " + QString::number(userId) + ")");
     model->setQuery(strQuery);

@@ -264,13 +264,13 @@ void MainWindow::newUser()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // \todo check dialog before closing it
+        //! \todo check dialog before closing it
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
             problem = "The field 'Nickname' cannot be empty";
-        // \todo check if nickname exists (set as secondary key?)
+        //! \todo check if nickname exists (set as secondary key?)
 
         if(problem == "")
         {
@@ -278,7 +278,12 @@ void MainWindow::newUser()
             QSqlQuery query;
             query.prepare(db.getInsertUserQuery());
             db.addUser(query,User(leName->text(),leNickname->text(),deBirthday->date()));
-            if(ui->rbUsers->isChecked())
+
+            if(db.getLastError().type() != QSqlError::NoError) {
+                showError(db.getLastError());
+                return;
+            }
+            else if(ui->rbUsers->isChecked())
                 ui->rbUsers->click();
         }
         else
@@ -333,7 +338,7 @@ void MainWindow::newEvent()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // \todo check dialog before closing it
+        //! \todo check dialog before closing it
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
@@ -346,7 +351,11 @@ void MainWindow::newEvent()
             QSqlQuery query;
             query.prepare(db.getInsertEventQuery());
             db.addEvent(query, Event(leName->text(), deStart->date(), deEnd->date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
-            if(ui->rbEvents->isChecked())
+            if(db.getLastError().type() != QSqlError::NoError) {
+                showError(db.getLastError());
+                return;
+            }
+            else if(ui->rbEvents->isChecked())
                 ui->rbEvents->click();
         }
         else
@@ -408,11 +417,11 @@ void MainWindow::newTransaction()
 
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
-        // \todo check dialog before closing it
+        //! \todo check dialog before closing it
         QString problem;
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
-        // \todo date between start and end date from event
+        //! \todo date between start and end date from event
 
         if(problem == "")
         {
@@ -421,7 +430,11 @@ void MainWindow::newTransaction()
             query.prepare(db.getInsertTransactionQuery());
             db.addTransaction(query, Transaction(User(getIdFromCmb(cmbUserGives)), User(getIdFromCmb(cmbUserReceives)), Event(getIdFromCmb(cmbEvents)),
                            dsbAmount->value(), deTransactionDate->date(), lePlace->text(), leDescription->text()));
-            if(ui->rbKittyTransactions->isChecked())
+            if(db.getLastError().type() != QSqlError::NoError) {
+                showError(db.getLastError());
+                return;
+            }
+            else if(ui->rbKittyTransactions->isChecked())
                 ui->rbKittyTransactions->click();
             else if(ui->rbPersonalTransactions->isChecked())
                 ui->rbPersonalTransactions->click();
