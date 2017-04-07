@@ -44,13 +44,41 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionDeleteEvent, &QAction::triggered, this, &MainWindow::deleteEvent);
     connect(ui->actionDeleteUser, &QAction::triggered, this, &MainWindow::deleteUser);
     connect(ui->actionDeleteTransaction, &QAction::triggered, this, &MainWindow::deleteTransaction);
+
+    connect(ui->actionDeleteDatabase, &QAction::triggered, this, &MainWindow::deleteDatabase);
     connect(ui->actionExampleDatabase, &QAction::triggered, this, &MainWindow::initExampleDatabase);
+    connect(ui->actionImportDatabase, &QAction::triggered, this, &MainWindow::importDatabase);
+    connect(ui->actionExportDatabase, &QAction::triggered, this, &MainWindow::exportDatabase);
+
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::showAboutDialog);
 
-    if(!db.isDatabaseEmpty())
-        ui->actionExampleDatabase->setEnabled(false);
-
     connect(ui->tvEventTransactions, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectTransaction(QModelIndex)));
+
+    checkDatabaseActions(); // Depending on the loaded database, some actions are disabled
+}
+
+/*!
+ * Check if database actions are enabled or disabled
+ *
+ * Depending on if the database is empty or not, it can be initialized or exported (if empty),
+ * or deleted or exported (if not)
+ */
+void MainWindow::checkDatabaseActions()
+{
+    if(db.isDatabaseEmpty())
+    {
+        ui->actionExampleDatabase->setEnabled(true);
+        ui->actionDeleteDatabase->setEnabled(false);
+        ui->actionImportDatabase->setEnabled(true);
+        ui->actionExportDatabase->setEnabled(false);
+    }
+    else
+    {
+        ui->actionExampleDatabase->setEnabled(false);
+        ui->actionDeleteDatabase->setEnabled(true);
+        ui->actionImportDatabase->setEnabled(false);
+        ui->actionExportDatabase->setEnabled(true);
+    }
 }
 
 /*!
@@ -204,7 +232,6 @@ void MainWindow::updateTransactionUserReceiving()
 /*!
  * Shows the amount of money given from user giving to user receiving minus the amount from user receiving
  * to user giving.
- * \todo Amounts should be only positive
  */
 void MainWindow::updateTransactionAmount()
 {
@@ -276,7 +303,6 @@ void MainWindow::newUser()
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
             problem = "The field 'Nickname' cannot be empty";
-        //! \todo check if nickname exists (set as secondary key?)
 
         if(problem == "")
         {
@@ -289,8 +315,10 @@ void MainWindow::newUser()
                 showError(db.getLastError());
                 return;
             }
-            else if(ui->rbUsers->isChecked())
-                ui->rbUsers->click();
+            else
+                tabSelected(ui->tabWidget->currentIndex()); // Reload information
+
+            checkDatabaseActions();
         }
         else
         {
@@ -370,8 +398,10 @@ void MainWindow::newEvent()
                 showError(db.getLastError());
                 return;
             }
-            else if(ui->rbEvents->isChecked())
-                ui->rbEvents->click();
+            else
+                tabSelected(ui->tabWidget->currentIndex()); // Reload information
+
+            checkDatabaseActions();
         }
         else
         {
@@ -467,12 +497,12 @@ void MainWindow::newTransaction()
                 showError(db.getLastError());
                 return;
             }
-            else if(ui->rbKittyTransactions->isChecked())
-                ui->rbKittyTransactions->click();
-            else if(ui->rbPersonalTransactions->isChecked())
-                ui->rbPersonalTransactions->click();
+            else
+                tabSelected(ui->tabWidget->currentIndex()); // Reload information
             if(ui->tabWidget->currentIndex()==1)
                 loadTransactions();
+
+            checkDatabaseActions();
         }
         else
         {
@@ -537,8 +567,8 @@ void MainWindow::deleteUser()
         else
         {
             db.deleteUser(getIdFromCmb(cmbUser));
-            if(ui->rbUsers->isChecked())
-                ui->rbUsers->click();
+            tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            checkDatabaseActions();
         }
     }
 }
@@ -589,8 +619,8 @@ void MainWindow::deleteEvent()
         else
         {
             db.deleteEvent(getIdFromCmb(cmbEvent));
-            if(ui->rbUsers->isChecked())
-                ui->rbUsers->click();
+            tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            checkDatabaseActions();
         }
     }
 }
@@ -636,12 +666,8 @@ void MainWindow::deleteTransaction()
     if (dialog.exec() == QDialog::Accepted) {
         int idTransaction = globalModel->data(globalModel->index(tvTransactions->currentIndex().row(),0)).toInt();
         db.deleteTransaction(idTransaction);
-        if(ui->rbKittyTransactions->isChecked())
-            ui->rbKittyTransactions->click();
-        else if(ui->rbPersonalTransactions->isChecked())
-            ui->rbPersonalTransactions->click();
-        if(ui->tabWidget->currentIndex()==1)
-            loadTransactions();
+        tabSelected(ui->tabWidget->currentIndex()); // Reload information
+        checkDatabaseActions();
     }
 }
 
@@ -691,6 +717,33 @@ void MainWindow::showAboutDialog()
 }
 
 /*!
+ * Delete database with all queries and initialize tables
+ */
+void MainWindow::deleteDatabase()
+{
+    QMessageBox msgBox;
+    msgBox.setText("This action will delete all the data in the database.");
+    msgBox.setInformativeText("Do you want to continue?");
+    msgBox.setIcon(QMessageBox::Question);
+    msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+    msgBox.setDefaultButton(QMessageBox::Ok);
+    int answer = msgBox.exec();
+
+    if(answer == QMessageBox::Ok)
+    {
+        db.deleteDb();
+        db.init();
+
+        QMessageBox msgBox;
+        msgBox.setText("Database deleted.");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+
+        checkDatabaseActions();
+    }
+}
+
+/*!
  * Trigger example data insertion to the database
  */
 void MainWindow::initExampleDatabase()
@@ -702,8 +755,67 @@ void MainWindow::initExampleDatabase()
     msgBox.setIcon(QMessageBox::Information);
     msgBox.exec();
 
-    ui->actionExampleDatabase->setEnabled(false);
-    if(ui->tabWidget->currentIndex()==1)
+    checkDatabaseActions();
+
+    tabSelected(ui->tabWidget->currentIndex()); // Reload information
+}
+
+/*!
+ * Import database from file
+ *
+ * Opens a db file given by user, deletes the database, copies the database file to the
+ * default path and initializes the database class.
+ */
+void MainWindow::importDatabase()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,
+        tr("Import database file"), QDir::rootPath(), tr("SQlite Database Files (*.db3)"));
+
+    if(!fileName.isEmpty())
+    {
+        db.deleteDb();
+        QFile::copy(fileName, db.getDbPath());
+        db.init();
+
+        QMessageBox msgBox;
+        msgBox.setText("Database imported from:");
+        msgBox.setInformativeText(fileName);
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+
+        checkDatabaseActions();
+    }
+}
+
+/*!
+ * Export database to file
+ */
+void MainWindow::exportDatabase()
+{
+    QString fileName = QFileDialog::getSaveFileName(this,
+        tr("Export database file"), QDir::rootPath(), tr("SQlite Database Files (*.db3)"));
+
+    if(!fileName.isEmpty())
+    {
+        QFile::copy(db.getDbPath(), fileName);
+
+        QMessageBox msgBox;
+        msgBox.setText("Database exported to:");
+        msgBox.setInformativeText(fileName);
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.exec();
+
+        checkDatabaseActions();
+    }
+}
+
+//_____GUI Slots_____
+/*!
+ * Triggers an action when a tab is selected. So far the transactions are loaded when transactionTab is loaded
+ */
+void MainWindow::tabSelected(int index)
+{
+    if(index==0)
     {
         if(ui->rbKittyTransactions->isChecked())
             ui->rbKittyTransactions->click();
@@ -715,16 +827,6 @@ void MainWindow::initExampleDatabase()
             ui->rbEvents->click();
     }
     else if(ui->tabWidget->currentIndex()==1)
-        loadTransactions();
-}
-
-//_____GUI Slots_____
-/*!
- * Triggers an action when a tab is selected. So far the transactions are loaded when transactionTab is loaded
- */
-void MainWindow::tabSelected(int index)
-{
-    if(index == 1)
         loadTransactions();
 }
 

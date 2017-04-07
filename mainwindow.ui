@@ -235,12 +235,27 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionExampleDatabase"/>
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuDatabase">
+    <property name="title">
+     <string>Database</string>
+    </property>
+    <widget class="QMenu" name="menuImport_Export">
+     <property name="title">
+      <string>Import / Export</string>
+     </property>
+     <addaction name="actionImportDatabase"/>
+     <addaction name="actionExportDatabase"/>
+    </widget>
+    <addaction name="actionDeleteDatabase"/>
+    <addaction name="actionExampleDatabase"/>
+    <addaction name="menuImport_Export"/>
+   </widget>
    <addaction name="menuAdd"/>
    <addaction name="menuDelete"/>
+   <addaction name="menuDatabase"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QToolBar" name="mainToolBar">
@@ -307,10 +322,34 @@
   </action>
   <action name="actionExampleDatabase">
    <property name="text">
-    <string>Init example database</string>
+    <string>Init with example data</string>
    </property>
    <property name="toolTip">
-    <string>Initialize example database</string>
+    <string>Initialize database with example data</string>
+   </property>
+  </action>
+  <action name="actionDeleteDatabase">
+   <property name="text">
+    <string>Empty data</string>
+   </property>
+   <property name="toolTip">
+    <string>Delete all entries of the database</string>
+   </property>
+  </action>
+  <action name="actionImportDatabase">
+   <property name="text">
+    <string>Import from file</string>
+   </property>
+   <property name="toolTip">
+    <string>Import database from file</string>
+   </property>
+  </action>
+  <action name="actionExportDatabase">
+   <property name="text">
+    <string>Export to file</string>
+   </property>
+   <property name="toolTip">
+    <string>Export database to file</string>
    </property>
   </action>
  </widget>

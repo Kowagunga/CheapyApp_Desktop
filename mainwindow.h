@@ -38,7 +38,10 @@ private slots:
     void deleteUser(); //! \brief Delete an existing user chosen in a dialog
     void deleteEvent(); //! \brief Delete an existing event chosen in a dialog
     void deleteTransaction(); //! \brief Delete an existing transaction chosen in a dialog
+    void deleteDatabase(); //! \brief Delete database
     void initExampleDatabase(); //! \brief Trigger example data insertion to the database
+    void importDatabase(); //! \brief Import database from file
+    void exportDatabase(); //! \brief Export database to file
     void showAboutDialog(); //! \brief Show About Dialog with information about this app
     /*!
      * \brief Triggers an action when a tab is selected
@@ -60,6 +63,10 @@ private:
      * \brief SQL Database
      */
     DataBase db;
+    /*!
+     * \brief Check if database actions from menu are enabled depending on the database status
+     */
+    void checkDatabaseActions();
     /*!
      * \brief Shows an SQL error to the User
      * \param err SQL Error

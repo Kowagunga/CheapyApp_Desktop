@@ -5,144 +5,157 @@
 
 #include "dbclasses.h"
 
-//! @brief Database class
+//! \brief Database class
 class DataBase
 {
 public:
-    //! @brief Database constructor
+    //! \brief Database constructor
     DataBase();
     /*!
-     * @brief Returns the id of the kitty
-     * @param loadFromDb if true, use a sql query to load it from the database.
-     * @return kitty id
+     * \brief Returns the id of the kitty
+     * \param loadFromDb if true, use a sql query to load it from the database.
+     * \return kitty id
      */
     int getKittyId(bool loadFromDb = false);
     /*!
-     * @brief Returns the last occurred error in the database
-     * @return database error of last query
+     * \brief Returns the last occurred error in the database
+     * \return database error of last query
      */
     QSqlError getLastError();
     /*!
-     * @brief Insert example data to the database
-     * @return database error of last query
+     * \brief Initializes the database
+     * \return Sql error
+     */
+    QSqlError init();
+    /*!
+     * \brief Deletes the database
+     * \return true if success
+     */
+    bool deleteDb();
+    /*!
+     * \brief Insert example data to the database
+     * \return database error of last query
      */
     QSqlError initExampleDatabase();
     /*!
-     * @brief Check if the database has any entries (besides the kitty user)
-     * @return true if neither of the tables has any entry (but the kitty user)
+     * \brief Returns the path to the database file
+     * \return path to the database file
+     */
+    QString getDbPath();
+    /*!
+     * \brief Check if the database has any entries (besides the kitty user)
+     * \return true if neither of the tables has any entry (but the kitty user)
      */
     bool isDatabaseEmpty();
     /*!
-     * @brief Adds transaction object to database
-     * @param q New transaction query
-     * @param newTransaction New transaction object
-     * @return Id of added transaction
+     * \brief Adds transaction object to database
+     * \param q New transaction query
+     * \param newTransaction New transaction object
+     * \return Id of added transaction
      * \sa Transaction()
      */
     QVariant addTransaction(QSqlQuery &q, Transaction newTransaction);
     /*!
-     * @brief Adds event object to database
-     * @param q New event query
-     * @param newEvent New event object
-     * @return Id of added event
+     * \brief Adds event object to database
+     * \param q New event query
+     * \param newEvent New event object
+     * \return Id of added event
      * \sa Event()
      */
     QVariant addEvent(QSqlQuery &q, Event newEvent);
     /*!
-     * @brief Adds user object to database
-     * @param q New user query
-     * @param newUser New user object
-     * @return Id of added user
+     * \brief Adds user object to database
+     * \param q New user query
+     * \param newUser New user object
+     * \return Id of added user
      * \sa User()
      */
     QVariant addUser(QSqlQuery &q, User newUser);
     /*!
-     * @brief Deletes transaction from database
-     * @param transactionId Transaction to be deleted
-     * @return Sql error
+     * \brief Deletes transaction from database
+     * \param transactionId Transaction to be deleted
+     * \return Sql error
      */
     QSqlError deleteTransaction(int transactionId);
     /*!
-     * @brief Deletes event from database
-     * @param eventId event to be deleted
-     * @return Sql error
+     * \brief Deletes event from database
+     * \param eventId event to be deleted
+     * \return Sql error
      */
     QSqlError deleteEvent(int eventId);
     /*!
-     * @brief Deletes user from database
-     * @param userId user to be deleted
-     * @return Sql error
+     * \brief Deletes user from database
+     * \param userId user to be deleted
+     * \return Sql error
      */
     QSqlError deleteUser(int userId);
     /*!
-     * @brief Returns transaction with that id
-     * @param id Transaction id
-     * @return Transaction object
+     * \brief Returns transaction with that id
+     * \param id Transaction id
+     * \return Transaction object
      */
     Transaction getTransaction(int id);
     /*!
-     * @brief Returns event with that id
-     * @param id Event id
-     * @return Event object
+     * \brief Returns event with that id
+     * \param id Event id
+     * \return Event object
      */
     Event getEvent(int id);
     /*!
-     * @brief Returns user with that id
-     * @param id User id
-     * @return User object
+     * \brief Returns user with that id
+     * \param id User id
+     * \return User object
      */
     User getUser(int id);
     /*!
-     * @brief Returns how many events a user is taking part in
-     * @param userId User id
-     * @return Number of events
+     * \brief Returns how many events a user is taking part in
+     * \param userId User id
+     * \return Number of events
      */
     int getNumEventsOfUser(int userId);
     /*!
-     * @brief Returns how many transactions does a user and/or an event have
-     * @param userId User id (-1 or not given to match any user)
-     * @param eventId Event id (-1 or not given to match any event)
-     * @return Number of transactions
+     * \brief Returns how many transactions does a user and/or an event have
+     * \param userId User id (-1 or not given to match any user)
+     * \param eventId Event id (-1 or not given to match any event)
+     * \return Number of transactions
      */
     int getNumTransactions(int userId = -1, int eventId = -1);
     /*!
-     * @brief Calculates the total amount of the Kitty for an event
-     * @param eventId Event id
-     * @return Amount of money
+     * \brief Calculates the total amount of the Kitty for an event
+     * \param eventId Event id
+     * \return Amount of money
      */
     double calcAmountKitty(int eventId);
     /*!
-     * @brief Returns the number of users with transactions in an event
-     * @param eventId Event id
-     * @return Number of users
+     * \brief Returns the number of users with transactions in an event
+     * \param eventId Event id
+     * \return Number of users
      */
     int calcNumUsers(int eventId);
 
     /*!
-     * @brief Returns sql query to insert a user in the database
-     * @return sql query
+     * \brief Returns sql query to insert a user in the database
+     * \return sql query
      * \todo this should be private
      */
     QLatin1String getInsertUserQuery();
     /*!
-     * @brief Returns sql query to insert an event in the database
-     * @return sql query
+     * \brief Returns sql query to insert an event in the database
+     * \return sql query
      * \todo this should be private
      */
     QLatin1String getInsertEventQuery();
     /*!
-     * @brief Returns sql query to insert a transaction in the database
-     * @return sql query
+     * \brief Returns sql query to insert a transaction in the database
+     * \return sql query
      * \todo this should be private
      */
     QLatin1String getInsertTransactionQuery();
-
 private:
     /*!
-     * @brief Initializes the database
-     * @return Sql error
+     * \brief Database
      */
-    QSqlError init();
+    QSqlDatabase db;
     /*!
      * \brief Id of the kitty
      */

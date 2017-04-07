@@ -39,14 +39,10 @@ QSqlError DataBase::getLastError()
  */
 QSqlError DataBase::init()
 {
-    QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
+    db = QSqlDatabase::addDatabase("QSQLITE");
 
-    QString path;
-//    path.append(QDir::homePath()).append(QDir::separator());
-    path.append("CheapyApp.db3");
-    path = QDir::toNativeSeparators(path);
+    QString path = getDbPath();
     db.setDatabaseName(path);
-    //! \todo best path to store database?
 
     if (!db.open())
         return db.lastError();
@@ -110,6 +106,35 @@ QSqlError DataBase::init()
 }
 
 /*!
+ * Deletes the database
+ */
+bool DataBase::deleteDb()
+{
+    // Close database and remove connection
+    QString connection;
+    connection = db.connectionName();
+    db.close();
+    db = QSqlDatabase();
+    db.removeDatabase(connection);
+
+    QString path = getDbPath();
+    return QFile::remove(path);
+}
+
+/*!
+ * Returns the path to the database file
+ * \todo best path to store database?
+ */
+QString DataBase::getDbPath()
+{
+    QString path;
+//    path.append(QDir::homePath()).append(QDir::separator());
+    path.append("CheapyApp.db3");
+    path = QDir::toNativeSeparators(path);
+    return path;
+}
+
+/*!
  * Check if the database has any entries (besides the kitty user)
  */
 bool DataBase::isDatabaseEmpty()
@@ -136,7 +161,6 @@ bool DataBase::isDatabaseEmpty()
  */
 QSqlError DataBase::initExampleDatabase()
 {
-    //! \todo trigger only from GUI "initialize database with example data"
     QSqlQuery q;
     if (!q.prepare(getInsertUserQuery()))
         return q.lastError();
