@@ -11,7 +11,6 @@ Desktop software written in C++/Qt for managing economic transactions among user
 \todo
 * Database
     *  Place database file in a better path
-    *  Improve syntax of database information queries
 *  GUI
     *  Current GUI should be converted to an administrator view or event overview
     *  Initial view should be (login ->) events for an user. Maybe ongoing event as default

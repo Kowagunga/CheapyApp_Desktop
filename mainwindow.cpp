@@ -240,23 +240,17 @@ void MainWindow::updateTransactionAmount()
     int userReceivingId = getIdFromCmb(ui->cmbUserReceives);
     double value = 0;
 
-    // Create the data model
-    QSqlQueryModel *model = new QSqlQueryModel;
-    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
-                               " AND transactions.usergives = " + QString::number(userGivingId) +
-                               " AND transactions.userreceives = " + QString::number(userReceivingId));
+    QSqlQuery query(QString("SELECT SUM(amount) FROM transactions WHERE transactions.event = %1"
+                            " AND transactions.usergives = %2 AND transactions.userreceives = %3")
+                    .arg(eventId).arg(userGivingId).arg(userReceivingId));
+    if(query.next())
+        value = query.value(0).toDouble();
 
-    if(model->rowCount() != 0)
-        value  = model->data(model->index(0,0)).toDouble();
-
-    // Create the data model
-    model = new QSqlQueryModel;
-    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
-                               " AND transactions.usergives = " + QString::number(userReceivingId) +
-                               " AND transactions.userreceives = " + QString::number(userGivingId));
-
-    if(model->rowCount() != 0)
-        value -= model->data(model->index(0,0)).toDouble();
+    QSqlQuery query2(QString("SELECT SUM(amount) FROM transactions WHERE transactions.event = %1"
+                                " AND transactions.usergives = %2 AND transactions.userreceives = %3")
+                        .arg(eventId).arg(userReceivingId).arg(userGivingId));
+    if(query2.next())
+        value -= query2.value(0).toDouble();
 
     ui->dsbAmount->setValue(value);
 
