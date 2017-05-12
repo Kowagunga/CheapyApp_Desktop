@@ -28,7 +28,7 @@ User::User(int id, QString name, QString nickname, QString pwdHash, QString pwdS
 }
 
 /*!
- * User constructor without an id.
+ * User constructor with password hash and salt and without an id.
  *
  * All parameters are required. After inserting in the database, the
  * resulting id can be set with \sa User::setId(int id)
@@ -43,6 +43,12 @@ User::User(QString name, QString nickname, QString pwdHash, QString pwdsalt, QDa
     this->birthdate = birthdate;
 }
 
+/*!
+ * User constructor with plain password and without an id
+ *
+ * All parameters are required. Password hash is generated. After inserting in the
+ * database, the resulting id can be set with \sa User::setId(int id)
+ */
 User::User(QString name, QString nickname, QString password, QDate birthdate)
 {
     this->id = -1;
@@ -52,6 +58,11 @@ User::User(QString name, QString nickname, QString password, QDate birthdate)
     hashPassword(password);
 }
 
+/*!
+ * Stores the hash of the given password
+ *
+ * Generates a random salt and stores the salt and the hash of the concatenated password with that salt.
+ */
 void User::hashPassword(QString password)
 {
     QString salt = generatePwdSalt();
@@ -60,6 +71,12 @@ void User::hashPassword(QString password)
     this->passwordSalt = salt;
 }
 
+/*!
+ * Checks if the received string matches the password user
+ *
+ * Generates the hash of the received password with the user salt and compares it
+ * against the user password hash. Returns true if correct.
+ */
 bool User::checkPassword(QString password)
 {
     if(passwordHash.isEmpty() || passwordSalt.isEmpty() || password.isEmpty())
@@ -92,6 +109,9 @@ int User::getAge()
     return currentAge;
 }
 
+/*!
+ * Generates a 16 character string out of random digits, low- and uppercase letters
+ */
 QString User::generatePwdSalt()
 {
     const QString possibleCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789");
