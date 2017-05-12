@@ -372,14 +372,6 @@ void MainWindow::newEvent()
     QLineEdit *leName = new QLineEdit(&dialog);
     leName->setMaxLength(20);
     form.addRow("Name*:", leName);
-    QDateEdit *deStart = new QDateEdit(&dialog);
-    deStart->setDate(QDateTime::currentDateTime().date());
-    deStart->setDisplayFormat("dd.MM.yyyy");
-    form.addRow("Start:", deStart);
-    QDateEdit *deEnd = new QDateEdit(&dialog);
-    deEnd->setDate(QDateTime::currentDateTime().date());
-    deEnd->setDisplayFormat("dd.MM.yyyy");
-    form.addRow("End:", deEnd);
     QLineEdit *lePlace = new QLineEdit(&dialog);
     lePlace->setMaxLength(30);
     form.addRow("Place:", lePlace);
@@ -417,15 +409,13 @@ void MainWindow::newEvent()
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
-        else if (deEnd->date() < deStart->date())
-            problem = "The end date must be the same or later than the start date";
 
         if(problem == "")
         {
             // save Event
             QSqlQuery query;
             query.prepare(db.getInsertEventQuery());
-            db.addEvent(query, Event(leName->text(), deStart->date(), deEnd->date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
+            db.addEvent(query, Event(leName->text(), QDateTime::currentDateTime().date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
             if(db.getLastError().type() != QSqlError::NoError) {
                 showError(db.getLastError());
                 return;
@@ -526,7 +516,6 @@ void MainWindow::newTransaction()
         QString problem;
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
-        //! \todo date between start and end date from event
 
         if(problem == "")
         {
@@ -817,6 +806,10 @@ void MainWindow::deleteDatabase()
 void MainWindow::initExampleDatabase()
 {
     db.initExampleDatabase();
+    if(db.getLastError().type() != QSqlError::NoError) {
+        showError(db.getLastError());
+        return;
+    }
 
     QMessageBox msgBox;
     msgBox.setText("Example data inserted to the database");
@@ -1071,8 +1064,7 @@ bool MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
 
     // Set the localized header captions
     globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("Event Name"));
-    globalModel->setHeaderData(globalModel->fieldIndex("start"), Qt::Horizontal, tr("Start Date"));
-    globalModel->setHeaderData(globalModel->fieldIndex("end"), Qt::Horizontal, tr("End Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("creation"), Qt::Horizontal, tr("Creation Date"));
     globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
     globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
     globalModel->setHeaderData(globalModel->fieldIndex("finished"), Qt::Horizontal, tr("Finished?"));

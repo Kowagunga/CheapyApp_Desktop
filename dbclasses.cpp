@@ -160,8 +160,7 @@ Event::Event()
 {
     this->id = -1;
     this->name = "";
-    this->startDate = QDate();
-    this->endDate = QDate();
+    this->creationDate = QDate();
     this->admin = User();
     this->place = "";
     this->description = "";
@@ -173,12 +172,11 @@ Event::Event()
  *
  * The other parameters can be given, but are not required.
  */
-Event::Event(int id, QString name, QDate start, QDate end, User admin, QString place, QString description, bool finished)
+Event::Event(int id, QString name, QDate creation, User admin, QString place, QString description, bool finished)
 {
     this->id = id;
     this->name = name;
-    this->startDate = start;
-    this->endDate = end;
+    this->creationDate = creation;
     this->admin = admin;
     this->place = place;
     this->description = description;
@@ -191,12 +189,11 @@ Event::Event(int id, QString name, QDate start, QDate end, User admin, QString p
  * All parameters are required. After inserting in the database, the
  * resulting id can be set with \sa Event::setId(int id)
  */
-Event::Event(QString name, QDate start, QDate end, User admin, QString place, QString description, bool finished)
+Event::Event(QString name, QDate creation, User admin, QString place, QString description, bool finished)
 {
     this->id = -1;
     this->name = name;
-    this->startDate = start;
-    this->endDate = end;
+    this->creationDate = creation;
     this->admin = admin;
     this->place = place;
     this->description = description;

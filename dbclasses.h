@@ -115,6 +115,7 @@ public:
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", ").append(nickname);
+        result.append(", ").append(email);
         result.append(", ").append(birthdate.toString("dd.MM.yyyy"));
         return result;
     }
@@ -165,25 +166,23 @@ public:
      * \brief Event constructor for a given id
      * \param id
      * \param name
-     * \param start start date
-     * \param end end date
+     * \param creation creation date
      * \param admin administrator
      * \param place
      * \param description
      * \param finished
      */
-    Event(int id, QString name = "", QDate start = QDate(), QDate end = QDate(), User admin = User(), QString place = "", QString description = "", bool finished = false);
+    Event(int id, QString name = "", QDate creation = QDate(), User admin = User(), QString place = "", QString description = "", bool finished = false);
     /*!
      * \brief Event constructor without an id (all parameters required)
      * \param name
-     * \param start start date
-     * \param end end date
+     * \param creation creation date
      * \param admin administrator
      * \param place
      * \param description
      * \param finished
      */
-    Event(QString name, QDate start, QDate end,  User admin, QString place = "", QString description = "", bool finished = false);
+    Event(QString name, QDate creation,  User admin, QString place = "", QString description = "", bool finished = false);
     /*!
      * \brief Returns id of the Event
      * \return  id
@@ -200,15 +199,10 @@ public:
      */
     QString getName() const {return name;}
     /*!
-     * \brief Returns start date of the Event
-     * \return startDate
+     * \brief Returns creation date of the Event
+     * \return creationDate
      */
-    QDate getStartDate() const {return startDate;}
-    /*!
-     * \brief Returns end date of the Event
-     * \return endDate
-     */
-    QDate getEndDate() const {return endDate;}
+    QDate getCreationDate() const {return creationDate;}
     /*!
      * \brief Returns administrator of the Event
      * \return admin
@@ -243,7 +237,7 @@ public:
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", at ").append(place);
-        result.append(", from ").append(startDate.toString("dd.MM.yyyy"));
+        result.append(", from ").append(creationDate.toString("dd.MM.yyyy"));
         result.append(", by ");
         if(admin.getNickname() == "")
             result.append(admin.getNickname());
@@ -262,13 +256,9 @@ private:
      */
     QString name;
     /*!
-     * \brief Event start date
+     * \brief Event creation date
      */
-    QDate startDate;
-    /*!
-     * \brief Event end date
-     */
-    QDate endDate;
+    QDate creationDate;
     /*!
      * \brief Event administrator
      */

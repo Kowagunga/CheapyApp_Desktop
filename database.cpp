@@ -77,8 +77,7 @@ QSqlError DataBase::init()
         if (!q.exec(QLatin1String("create table events("
                                       "id integer primary key, "
                                       "name text not null, "
-                                      "start date, "
-                                      "end date, "
+                                      "creation date, "
                                       "place text, "
                                       "description text, "
                                       "finished integer not null, "
@@ -181,7 +180,7 @@ QSqlError DataBase::initExampleDatabase()
     if (!q.prepare(getInsertEventQuery()))
         return q.lastError();
 
-    Event warsaw = Event(QLatin1String("Warsaw Trip"), QDate(2016, 9, 1), QDate(2016, 9, 5), bruno, QLatin1String("Warsaw, Poland"), QLatin1String("Trip to Wasaw to destroy our livers"), 0);
+    Event warsaw = Event(QLatin1String("Warsaw Trip"), QDate(2016, 9, 1), bruno, QLatin1String("Warsaw, Poland"), QLatin1String("Trip to Wasaw to destroy our livers"), 0);
     warsaw.setId(addEvent(q, warsaw).toInt());
 
     if (!q.prepare(getInsertTransactionQuery()))
@@ -205,7 +204,7 @@ QLatin1String DataBase::getInsertUserQuery()
 
 QLatin1String DataBase::getInsertEventQuery()
 {
-    return QLatin1String("insert into events(name, start, end, place, description, finished, admin) values(?, ?, ?, ?, ?, ?, ?)");
+    return QLatin1String("insert into events(name, creation, place, description, finished, admin) values(?, ?, ?, ?, ?, ?)");
 }
 
 QLatin1String DataBase::getInsertTransactionQuery()
@@ -236,8 +235,7 @@ QVariant DataBase::addTransaction(QSqlQuery &q, Transaction newTransaction)
 QVariant DataBase::addEvent(QSqlQuery &q, Event newEvent)
 {
     q.addBindValue(newEvent.getName());
-    q.addBindValue(newEvent.getStartDate());
-    q.addBindValue(newEvent.getEndDate());
+    q.addBindValue(newEvent.getCreationDate());
     q.addBindValue(newEvent.getPlace());
     q.addBindValue(newEvent.getDescription());
     q.addBindValue(newEvent.isFinished());
@@ -338,11 +336,10 @@ Event DataBase::getEvent(int id)
     {
         event = Event(id, query.value(1).toString(),
             query.value(2).toDate(),
-            query.value(3).toDate(),
-            User(query.value(4).toInt()),
+            User(query.value(3).toInt()),
+            query.value(4).toString(),
             query.value(5).toString(),
-            query.value(6).toString(),
-            query.value(7).toBool());
+            query.value(6).toBool());
     }
 
     lastError = query.lastError();
