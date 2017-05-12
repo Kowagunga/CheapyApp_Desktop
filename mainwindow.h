@@ -126,14 +126,14 @@ private:
      * \param condition condition given to the query as "WHERE" clause
      * \return true if query returns no results
      */
-    bool loadUsersToTable(QTableView *tableView, QString condition = "");
+    bool loadUsersToTable(QTableView *tableView, QString condition = QString());
     /*!
      * \brief Load events from database to a table-view
      * \param tableView table-view where data is going to be shown
      * \param condition condition given to the query as "WHERE" clause
      * \return true if query returns no results
      */
-    bool loadEventsToTable(QTableView *tableView, QString condition = "");
+    bool loadEventsToTable(QTableView *tableView, QString condition = QString());
     /*!
      * \brief Load transactions from database to a table-view
      * \param tableView table-view where data is going to be shown
@@ -142,7 +142,7 @@ private:
      * \param condition condition given to the query as "WHERE" clause
      * \return true if query returns no results
      */
-    bool loadTransactionsToTable(QTableView *tableView, bool showKitty = true, bool showPersonal = true, QString condition = "");
+    bool loadTransactionsToTable(QTableView *tableView, bool showKitty = true, bool showPersonal = true, QString condition = QString());
 };
 
 #endif // MAINWINDOW_H

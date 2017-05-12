@@ -7,11 +7,11 @@
 User::User()
 {
     this->id = -1;
-    this->name = "";
-    this->nickname = "";
-    this->email = "";
-    this->passwordHash = "";
-    this->passwordSalt = "";
+    this->name = QString();
+    this->nickname = QString();
+    this->email = QString();
+    this->passwordHash = QString();
+    this->passwordSalt = QString();
     this->birthdate = QDate();
 }
 
@@ -159,11 +159,11 @@ QString User::generatePwdSalt()
 Event::Event()
 {
     this->id = -1;
-    this->name = "";
+    this->name = QString();
     this->creationDate = QDate();
     this->admin = User();
-    this->place = "";
-    this->description = "";
+    this->place = QString();
+    this->description = QString();
     this->finished = false;
 }
 
@@ -211,8 +211,8 @@ Transaction::Transaction()
     this->event = Event();
     this->amount = 0;
     this->date = QDate();
-    this->place = "";
-    this->description = "";
+    this->place = QString();
+    this->description = QString();
 }
 
 /*!

@@ -20,7 +20,7 @@ public:
      * \param password salt
      * \param birthdate
      */
-    User(int id, QString name = "", QString nickname = "", QString email = "", QString pwdHash = "", QString pwdSalt = "", QDate birthdate = QDate());
+    User(int id, QString name = QString(), QString nickname = QString(), QString email = QString(), QString pwdHash = QString(), QString pwdSalt = QString(), QDate birthdate = QDate());
     /*!
      * \brief User constractor without an id (all parameters required)
      * \param name
@@ -172,7 +172,7 @@ public:
      * \param description
      * \param finished
      */
-    Event(int id, QString name = "", QDate creation = QDate(), User admin = User(), QString place = "", QString description = "", bool finished = false);
+    Event(int id, QString name = QString(), QDate creation = QDate(), User admin = User(), QString place = QString(), QString description = QString(), bool finished = false);
     /*!
      * \brief Event constructor without an id (all parameters required)
      * \param name
@@ -182,7 +182,7 @@ public:
      * \param description
      * \param finished
      */
-    Event(QString name, QDate creation,  User admin, QString place = "", QString description = "", bool finished = false);
+    Event(QString name, QDate creation,  User admin, QString place = QString(), QString description = QString(), bool finished = false);
     /*!
      * \brief Returns id of the Event
      * \return  id
@@ -239,10 +239,10 @@ public:
         result.append(", at ").append(place);
         result.append(", from ").append(creationDate.toString("dd.MM.yyyy"));
         result.append(", by ");
-        if(admin.getNickname() == "")
-            result.append(admin.getNickname());
-        else
+        if(admin.getNickname().isEmpty())
             result.append(QString::number(admin.getId()));
+        else
+            result.append(admin.getNickname());
         return result;
     }
 
@@ -295,7 +295,7 @@ public:
      * \param description
      */
     Transaction(int id, User userGiving = User(), User userReceiving = User(), Event event = Event(),
-                double amount = 0.0, QDate date = QDate(), QString place = "", QString description = "");
+                double amount = 0.0, QDate date = QDate(), QString place = QString(), QString description = QString());
     /*!
      * \brief Transaction constructor without an id (all parameters required)
      * \param userGiving user who gives/pays money
@@ -306,7 +306,7 @@ public:
      * \param place
      * \param description
      */
-    Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place = "", QString description = "");
+    Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place = QString(), QString description = QString());
     /*!
      * \brief Returns id of the Transaction
      * \return id
@@ -360,19 +360,19 @@ public:
         QString result;
         result = QString::number(id);
         result.append(", ");
-        if(userGiving.getNickname() == "")
+        if(userGiving.getNickname().isEmpty())
             result.append(QString::number(userGiving.getId()));
         else
             result.append(userGiving.getNickname());
         result.append(" payed ").append(QString::number(amount, 'g', 2));
         result.append(" to ");
-        if(userReceiving.getNickname() == "")
+        if(userReceiving.getNickname().isEmpty())
             result.append(QString::number(userReceiving.getId()));
         else
             result.append(userReceiving.getNickname());
         result.append(" on ").append(date.toString("dd.MM.yyyy"));
         result.append(" for ");
-        if(event.getName() == "")
+        if(event.getName().isEmpty())
             result.append(QString::number(event.getId()));
         else
             result.append(event.getName());

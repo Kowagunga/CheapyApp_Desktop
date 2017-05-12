@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QString windowTitle = "CheapyApp";
+    QString windowTitle = QString("CheapyApp");
     this->setWindowTitle(windowTitle);
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
@@ -312,7 +312,7 @@ void MainWindow::newUser()
 
         User userToAdd = User(leName->text(),leNickname->text(),leEmail->text(),lePassword->text(),deBirthday->date());
 
-        QString problem;
+        QString problem = QString();
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
@@ -324,7 +324,7 @@ void MainWindow::newUser()
         else if(QString::compare(lePassword->text(),leRepeatPassword->text(),Qt::CaseSensitive)!=0)
             problem = "The repeated password is incorrect";
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save User
             QSqlQuery query;
@@ -379,7 +379,7 @@ void MainWindow::newEvent()
     leDescription->setMaxLength(50);
     form.addRow("Description:", leDescription);
     QComboBox *cmbAdmin = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbAdmin,false,"");
+    bool noUsers = loadUsersToCmb(cmbAdmin,false,QString());
     form.addRow("Admin:", cmbAdmin);
 
     if(noUsers)
@@ -406,11 +406,11 @@ void MainWindow::newEvent()
         lePlace->setText(lePlace->text().trimmed());
         leDescription->setText(leDescription->text().trimmed());
 
-        QString problem;
+        QString problem = QString();
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save Event
             QSqlQuery query;
@@ -455,13 +455,13 @@ void MainWindow::newTransaction()
     dialog.setWindowTitle("Create new transaction");
 
     QComboBox *cmbEvents = new QComboBox(&dialog);
-    bool noEvents = loadEventsToCmb(cmbEvents,"");
+    bool noEvents = loadEventsToCmb(cmbEvents,QString());
     form.addRow("Event:", cmbEvents);
     QComboBox *cmbUserGives = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbUserGives,true,"");
+    bool noUsers = loadUsersToCmb(cmbUserGives,true,QString());
     form.addRow("User giving:", cmbUserGives);
     QComboBox *cmbUserReceives = new QComboBox(&dialog);
-    loadUsersToCmb(cmbUserReceives,true,"");
+    loadUsersToCmb(cmbUserReceives,true,QString());
     form.addRow("User receiving:", cmbUserReceives);
     QDoubleSpinBox *dsbAmount = new QDoubleSpinBox(&dialog);
     form.addRow("Amount:", dsbAmount);
@@ -513,11 +513,11 @@ void MainWindow::newTransaction()
         lePlace->setText(lePlace->text().trimmed());
         leDescription->setText(leDescription->text().trimmed());
 
-        QString problem;
+        QString problem = QString();
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save Transaction
             QSqlQuery query;
@@ -565,7 +565,7 @@ void MainWindow::deleteUser()
     dialog.setWindowTitle("Delete existing user");
 
     QComboBox *cmbUser = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbUser,false,"");
+    bool noUsers = loadUsersToCmb(cmbUser,false,QString());
 
     if(noUsers)
     {
@@ -637,7 +637,7 @@ void MainWindow::deleteEvent()
     dialog.setWindowTitle("Delete existing event");
 
     QComboBox *cmbEvent = new QComboBox(&dialog);
-    bool noEvents = loadEventsToCmb(cmbEvent,"");
+    bool noEvents = loadEventsToCmb(cmbEvent,QString());
 
     if(noEvents)
     {
@@ -733,7 +733,7 @@ void MainWindow::showAboutDialog()
     dialog.setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::WindowSystemMenuHint|Qt::WindowCloseButtonHint);
     dialog.setWindowTitle("About CheapyApp");
 
-    QString title = "CheapyApp Version " + QString("%1.%2.%3").arg(VERSION_MAJOR).arg(VERSION_MINOR).arg(VERSION_BUILD);
+    QString title = QString("CheapyApp Version ") + QString("%1.%2.%3").arg(VERSION_MAJOR).arg(VERSION_MINOR).arg(VERSION_BUILD);
     QLabel *lblTitleAndVersion = new QLabel(title);
     lblTitleAndVersion->setStyleSheet("QLabel { font-weight: bold }");
     layout.addWidget(lblTitleAndVersion);
@@ -977,9 +977,9 @@ bool MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString co
     QString strQuery = "SELECT nickname, id FROM users";
     if(!includeKitty)
         strQuery.append(" WHERE users.id IS NOT " + QString::number(db.getKittyId()));
-    if(condition!="" && !includeKitty)
+    if(!condition.isEmpty() && !includeKitty)
         strQuery.append(" AND " + condition);
-    if(condition!="" && includeKitty)
+    if(!condition.isEmpty() && includeKitty)
         strQuery.append(" WHERE " + condition);
 
     model->setQuery(strQuery);
@@ -998,7 +998,7 @@ bool MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
     // Create the data model
     QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT name, id FROM events";
-    if(condition!="")
+    if(!condition.isEmpty())
         strQuery.append(" WHERE " + condition);
 
     model->setQuery(strQuery);
@@ -1025,10 +1025,10 @@ bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     globalModel->setHeaderData(globalModel->fieldIndex("email"), Qt::Horizontal, tr("Email Address"));
     globalModel->setHeaderData(globalModel->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
 
-    QString filter;
+    QString filter = QString();
     filter = "id IS NOT " + QString::number(db.getKittyId());
 
-    if(condition != "")
+    if(!condition.isEmpty())
     {
         filter.append(" AND ").append(condition);
     }
@@ -1070,8 +1070,8 @@ bool MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
     globalModel->setHeaderData(globalModel->fieldIndex("finished"), Qt::Horizontal, tr("Finished?"));
     globalModel->setHeaderData(globalModel->fieldIndex("admin"), Qt::Horizontal, tr("Administrator"));
 
-    QString filter;
-    if(condition != "")
+    QString filter = QString();
+    if(!condition.isEmpty())
     {
         filter = condition;
     }
@@ -1112,7 +1112,7 @@ bool MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
     globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
 
-    QString filter;
+    QString filter = QString();
     if(showKitty && !showPersonal)
     {
         filter = "userreceives = " + QString::number(db.getKittyId()) + " OR usergives = " + QString::number(db.getKittyId());
@@ -1123,12 +1123,12 @@ bool MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     }
     else if (!showKitty && !showPersonal)
     {
-        filter = "";
+        filter.isEmpty();
     }
 
-    if(condition != "")
+    if(!condition.isEmpty())
     {
-        if(filter == "")
+        if(filter.isEmpty())
             filter = condition;
         else
             filter.append(" AND (" + condition + ")");
