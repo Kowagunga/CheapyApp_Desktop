@@ -446,7 +446,7 @@ int DataBase::calcNumUsers(int eventId)
  */
 int DataBase::qSqlQueryNumRows(QSqlQuery query)
 {
-    int numberOfRows = -1;
+    int numberOfRows = 0;
     if(query.last())
     {
         numberOfRows =  query.at() + 1;

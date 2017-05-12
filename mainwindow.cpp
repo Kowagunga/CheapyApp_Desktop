@@ -548,6 +548,11 @@ void MainWindow::deleteUser()
 
     form.addRow("User:", cmbUser);
 
+    QLineEdit *lePassword = new QLineEdit(&dialog);
+    lePassword->setMaxLength(16);
+    lePassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Password*:", lePassword);
+
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
@@ -558,6 +563,7 @@ void MainWindow::deleteUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions, events;
+        User userToDelete = db.getUser(getIdFromCmb(cmbUser));
         if((transactions = db.getNumTransactions(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
@@ -569,6 +575,13 @@ void MainWindow::deleteUser()
         {
             QMessageBox msgBox;
             msgBox.setText("The user is admin of " + QString::number(events) + " events. Delete them first");
+            msgBox.setIcon(QMessageBox::Warning);
+            msgBox.exec();
+        }
+        else if(userToDelete.checkPassword(lePassword->text()) == false)
+        {
+            QMessageBox msgBox;
+            msgBox.setText("The password is incorrect.");
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
         }
