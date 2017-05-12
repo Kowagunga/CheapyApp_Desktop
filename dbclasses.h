@@ -15,20 +15,22 @@ public:
      * \param id
      * \param name
      * \param nickname
+     * \param email
      * \param password hash
      * \param password salt
      * \param birthdate
      */
-    User(int id, QString name = "", QString nickname = "", QString pwdHash = "", QString pwdSalt = "", QDate birthdate = QDate());
+    User(int id, QString name = "", QString nickname = "", QString email = "", QString pwdHash = "", QString pwdSalt = "", QDate birthdate = QDate());
     /*!
      * \brief User constractor without an id (all parameters required)
      * \param name
      * \param nickname
+     * \param email
      * \param pwdHash
      * \param pwdSalt
      * \param birthdate
      */
-    User(QString name, QString nickname, QString pwdHash, QString pwdsalt, QDate birthdate);
+    User(QString name, QString nickname, QString email, QString pwdHash, QString pwdsalt, QDate birthdate);
     /*!
      * \brief User constractor without an id and encrypting own password
      * \param name
@@ -36,7 +38,7 @@ public:
      * \param password
      * \param birthdate
      */
-    User(QString name, QString nickname, QString password, QDate birthdate);
+    User(QString name, QString nickname, QString email, QString password, QDate birthdate);
     /*!
      * \brief Returns id of the User
      * \return id
@@ -57,6 +59,16 @@ public:
      * \return nickname
      */
     QString getNickname() const {return nickname;}
+    /*!
+     * \brief Returns email of the User
+     * \return email
+     */
+    QString getEmail() const {return email;}
+    /*!
+     * \brief Validate email address
+     * \return true if valid
+     */
+    bool validateEmail();
     /*!
      * \brief Returns the hash of the user password
      * \return passwordHash
@@ -120,6 +132,10 @@ private:
      * \brief User nickname
      */
     QString nickname;
+    /*!
+     * \brief User email
+     */
+    QString email;
     /*!
      * \brief Hash of user password
      */

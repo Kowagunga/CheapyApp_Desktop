@@ -9,6 +9,9 @@ User::User()
     this->id = -1;
     this->name = "";
     this->nickname = "";
+    this->email = "";
+    this->passwordHash = "";
+    this->passwordSalt = "";
     this->birthdate = QDate();
 }
 
@@ -17,11 +20,12 @@ User::User()
  *
  * The other parameters can be given, but are not required.
  */
-User::User(int id, QString name, QString nickname, QString pwdHash, QString pwdSalt, QDate birthdate)
+User::User(int id, QString name, QString nickname, QString email, QString pwdHash, QString pwdSalt, QDate birthdate)
 {
     this->id = id;
     this->name = name;
     this->nickname = nickname;
+    this->email = email;
     this->passwordHash = pwdHash;
     this->passwordSalt = pwdSalt;
     this->birthdate = birthdate;
@@ -33,11 +37,12 @@ User::User(int id, QString name, QString nickname, QString pwdHash, QString pwdS
  * All parameters are required. After inserting in the database, the
  * resulting id can be set with \sa User::setId(int id)
  */
-User::User(QString name, QString nickname, QString pwdHash, QString pwdsalt, QDate birthdate)
+User::User(QString name, QString nickname, QString email, QString pwdHash, QString pwdsalt, QDate birthdate)
 {
     this->id = -1;
     this->name = name;
     this->nickname = nickname;
+    this->email = email;
     this->passwordHash = pwdHash;
     this->passwordSalt = pwdsalt;
     this->birthdate = birthdate;
@@ -49,13 +54,34 @@ User::User(QString name, QString nickname, QString pwdHash, QString pwdsalt, QDa
  * All parameters are required. Password hash is generated. After inserting in the
  * database, the resulting id can be set with \sa User::setId(int id)
  */
-User::User(QString name, QString nickname, QString password, QDate birthdate)
+User::User(QString name, QString nickname, QString email, QString password, QDate birthdate)
 {
     this->id = -1;
     this->name = name;
     this->nickname = nickname;
+    this->email = email;
     this->birthdate = birthdate;
     hashPassword(password);
+}
+
+/*!
+ * Validates an email address
+ *
+ * Checks if it's a valid email address and if it has an intermediate address
+ */
+bool User::validateEmail()
+{
+    const QRegExp m_validMailRegExp = QRegExp("[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}");
+    const QRegExp m_intermediateMailRegExp = QRegExp("[a-z0-9._%+-]*@?[a-z0-9.-]*\\.?[a-z]*");
+
+    QString text = email.trimmed().toLower();
+
+    if (m_validMailRegExp.exactMatch(text))
+        return true;
+    if (m_intermediateMailRegExp.exactMatch(text))
+        return false;
+
+    return false;
 }
 
 /*!

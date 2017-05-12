@@ -276,6 +276,9 @@ void MainWindow::newUser()
     QLineEdit *leNickname = new QLineEdit(&dialog);
     leNickname->setMaxLength(30);
     form.addRow("Nickname*:", leNickname);
+    QLineEdit *leEmail = new QLineEdit(&dialog);
+    leEmail->setMaxLength(40);
+    form.addRow("Email*:", leEmail);
 
     QLineEdit *lePassword = new QLineEdit(&dialog);
     lePassword->setMaxLength(16);
@@ -302,11 +305,20 @@ void MainWindow::newUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
+        // Trim string fields
+        leName->setText(leName->text().trimmed());
+        leNickname->setText(leNickname->text().trimmed());
+        leEmail->setText(leEmail->text().trimmed());
+
+        User userToAdd = User(leName->text(),leNickname->text(),leEmail->text(),lePassword->text(),deBirthday->date());
+
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
-            problem = "The field 'Nickname' cannot be empty";        
+            problem = "The field 'Nickname' cannot be empty";
+        else if(userToAdd.validateEmail() == false)
+            problem = "The email address is not valid";
         else if(lePassword->text().size() < 8)
             problem = "The password must consist of at least 8 characters";
         else if(QString::compare(lePassword->text(),leRepeatPassword->text(),Qt::CaseSensitive)!=0)
@@ -317,14 +329,21 @@ void MainWindow::newUser()
             // save User
             QSqlQuery query;
             query.prepare(db.getInsertUserQuery());
-            db.addUser(query,User(leName->text(),leNickname->text(),lePassword->text(),deBirthday->date()));
+            db.addUser(query,userToAdd);
 
             if(db.getLastError().type() != QSqlError::NoError) {
                 showError(db.getLastError());
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("User %1 (%2) with email %3 created successfully.")
+                               .arg(userToAdd.getNickname()).arg(userToAdd.getName()).arg(userToAdd.getEmail()));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
 
             checkDatabaseActions();
         }
@@ -390,6 +409,11 @@ void MainWindow::newEvent()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
+        // Trim string fields
+        leName->setText(leName->text().trimmed());
+        lePlace->setText(lePlace->text().trimmed());
+        leDescription->setText(leDescription->text().trimmed());
+
         QString problem;
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
@@ -407,7 +431,14 @@ void MainWindow::newEvent()
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("Event %1 created successfully.")
+                               .arg(leName->text()));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
 
             checkDatabaseActions();
         }
@@ -489,6 +520,9 @@ void MainWindow::newTransaction()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
+        lePlace->setText(lePlace->text().trimmed());
+        leDescription->setText(leDescription->text().trimmed());
+
         QString problem;
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
@@ -506,7 +540,14 @@ void MainWindow::newTransaction()
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("Transaction created successfully."));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
+
             if(ui->tabWidget->currentIndex()==1)
                 loadTransactions();
 
@@ -988,6 +1029,7 @@ bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     // Set the localized header captions
     globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("User Name"));
     globalModel->setHeaderData(globalModel->fieldIndex("nickname"), Qt::Horizontal, tr("Nickname"));
+    globalModel->setHeaderData(globalModel->fieldIndex("email"), Qt::Horizontal, tr("Email Address"));
     globalModel->setHeaderData(globalModel->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
 
     QString filter;

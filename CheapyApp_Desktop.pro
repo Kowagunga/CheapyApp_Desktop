@@ -23,6 +23,8 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui
 
+OTHER_FILES += README.md
+
 #Application version
 VERSION_MAJOR = 0
 VERSION_MINOR = 1
