@@ -276,6 +276,16 @@ void MainWindow::newUser()
     QLineEdit *leNickname = new QLineEdit(&dialog);
     leNickname->setMaxLength(30);
     form.addRow("Nickname*:", leNickname);
+
+    QLineEdit *lePassword = new QLineEdit(&dialog);
+    lePassword->setMaxLength(16);
+    lePassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Password*:", lePassword);
+    QLineEdit *leRepeatPassword = new QLineEdit(&dialog);
+    leRepeatPassword->setMaxLength(16);
+    leRepeatPassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Repeat password*:", leRepeatPassword);
+
     QDateEdit *deBirthday = new QDateEdit(&dialog);
     deBirthday->setDate(QDate(2000,1,1));
     deBirthday->setDisplayFormat("dd.MM.yyyy");
@@ -296,14 +306,18 @@ void MainWindow::newUser()
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
-            problem = "The field 'Nickname' cannot be empty";
+            problem = "The field 'Nickname' cannot be empty";        
+        else if(lePassword->text().size() < 8)
+            problem = "The password must consist of at least 8 characters";
+        else if(QString::compare(lePassword->text(),leRepeatPassword->text(),Qt::CaseSensitive)!=0)
+            problem = "The repeated password is incorrect";
 
         if(problem == "")
         {
             // save User
             QSqlQuery query;
             query.prepare(db.getInsertUserQuery());
-            db.addUser(query,User(leName->text(),leNickname->text(),deBirthday->date()));
+            db.addUser(query,User(leName->text(),leNickname->text(),lePassword->text(),deBirthday->date()));
 
             if(db.getLastError().type() != QSqlError::NoError) {
                 showError(db.getLastError());
@@ -728,11 +742,17 @@ void MainWindow::deleteDatabase()
         db.deleteDb();
         db.init();
 
-        QMessageBox msgBox;
-        msgBox.setText("Database deleted.");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.exec();
-
+        if(db.getLastError().type() != QSqlError::NoError) {
+            showError(db.getLastError());
+            return;
+        }
+        else
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Database deleted.");
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.exec();
+        }
         checkDatabaseActions();
     }
 }
@@ -974,6 +994,8 @@ bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
     tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
+    tableView->setColumnHidden(globalModel->fieldIndex("passwordhash"), true);
+    tableView->setColumnHidden(globalModel->fieldIndex("passwordsalt"), true);
     tableView->setCurrentIndex(globalModel->index(0, 0));
 
     return globalModel->rowCount() == 0;

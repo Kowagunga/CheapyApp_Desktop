@@ -15,16 +15,28 @@ public:
      * \param id
      * \param name
      * \param nickname
+     * \param password hash
+     * \param password salt
      * \param birthdate
      */
-    User(int id, QString name = "", QString nickname = "", QDate birthdate = QDate());
+    User(int id, QString name = "", QString nickname = "", QString pwdHash = "", QString pwdSalt = "", QDate birthdate = QDate());
     /*!
      * \brief User constractor without an id (all parameters required)
      * \param name
      * \param nickname
+     * \param pwdHash
+     * \param pwdSalt
      * \param birthdate
      */
-    User(QString name, QString nickname, QDate birthdate);
+    User(QString name, QString nickname, QString pwdHash, QString pwdsalt, QDate birthdate);
+    /*!
+     * \brief User constractor without an id and encrypting own password
+     * \param name
+     * \param nickname
+     * \param password
+     * \param birthdate
+     */
+    User(QString name, QString nickname, QString password, QDate birthdate);
     /*!
      * \brief Returns id of the User
      * \return id
@@ -45,6 +57,33 @@ public:
      * \return nickname
      */
     QString getNickname() const {return nickname;}
+    /*!
+     * \brief Returns the hash of the user password
+     * \return passwordHash
+     */
+    QString getPasswordHash() const {return passwordHash;}
+    /*!
+     * \brief Returns the salt of the user password
+     * \return  passwordSalt
+     */
+    QString getPasswordSalt() const {return passwordSalt;}
+    /*!
+     * \brief Set password hash and salt for the user
+     * \param hash password hash
+     * \param salt password salt
+     */
+    void setPassword(QString hash, QString salt) {this->passwordHash = hash; this->passwordSalt = salt;}
+    /*!
+     * \brief Generate and store password hash and salt in the object
+     * \param password plain text password
+     */
+    void hashPassword(QString password);
+    /*!
+     * \brief Checks if the hash of the given password and stored salt matches the stored hash
+     * \param password plan text password
+     * \return true if password hash matches stored hash
+     */
+    bool checkPassword(QString password);
     /*!
      * \brief Returns birthdate of the User
      * \return birthdate
@@ -82,9 +121,22 @@ private:
      */
     QString nickname;
     /*!
+     * \brief Hash of user password
+     */
+    QString passwordHash;
+    /*!
+     * \brief Salt of user password
+     */
+    QString passwordSalt;
+    /*!
      * \brief User birthdate
      */
     QDate birthdate;
+    /*!
+     * \brief Generate a password salt (random string)
+     * \return password salt
+     */
+    QString generatePwdSalt();
 };
 
 //! \brief The Event class

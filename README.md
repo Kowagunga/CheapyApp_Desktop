@@ -6,6 +6,7 @@ Desktop software written in C++/Qt for managing economic transactions among user
     * Classes for each table in the database (User, Event, Transaction)
 	* MainWindow and DataBase use these classes (OOD)
 	* Documentation with doxygen (26/03/2017)
+        * Password field for users. Stored as SHA256 hash and 16 character salt (12/05/2017)
 
 ## General to-do list
 \todo

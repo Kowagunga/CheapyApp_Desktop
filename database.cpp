@@ -68,6 +68,8 @@ QSqlError DataBase::init()
                                       "id integer primary key, "
                                       "name text, "
                                       "nickname text not null unique, "
+                                      "passwordhash text not null, "
+                                      "passwordsalt text not null, "
                                       "birthdate date"
                                   ")")))
             return q.lastError();
@@ -97,7 +99,7 @@ QSqlError DataBase::init()
         if (!q.prepare(getInsertUserQuery()))
             return q.lastError();
 
-        User kitty = User(QLatin1String("Kitty"), QLatin1String("Kitty"), QDate(2000, 1, 1));
+        User kitty = User(QLatin1String("Kitty"), QLatin1String("Kitty"), QString("password"), QDate(2000, 1, 1));
         kitty.setId(addUser(q, kitty).toInt());
 
         kittyId = kitty.getId();
@@ -167,9 +169,9 @@ QSqlError DataBase::initExampleDatabase()
 
     User kitty = getUser(kittyId);
 
-    User bruno = User(QLatin1String("Bruno Santamaria"), QLatin1String("Kowagunga"), QDate(1989, 2, 14));
-    User xavi = User(QLatin1String("Xavier Parareda"),  QLatin1String("X"), QDate(1989, 7, 30));
-    User asustao = User(QLatin1String("Luis Lozano"),  QLatin1String("Asustao"), QDate(1989, 12, 20));
+    User bruno = User(QLatin1String("Bruno Santamaria"), QLatin1String("Kowagunga"), QString("password"), QDate(1989, 2, 14));
+    User xavi = User(QLatin1String("Xavier Parareda"),  QLatin1String("X"), QString("password"), QDate(1989, 7, 30));
+    User asustao = User(QLatin1String("Luis Lozano"),  QLatin1String("Asustao"), QString("password"), QDate(1989, 12, 20));
 
     bruno.setId(addUser(q, bruno).toInt());
     xavi.setId(addUser(q, xavi).toInt());
@@ -197,7 +199,7 @@ QSqlError DataBase::initExampleDatabase()
 
 QLatin1String DataBase::getInsertUserQuery()
 {
-    return QLatin1String("insert into users(name, nickname, birthdate) values(?, ?, ?)");
+    return QLatin1String("insert into users(name, nickname, passwordhash, passwordsalt, birthdate) values(?, ?, ?, ?, ?)");
 }
 
 QLatin1String DataBase::getInsertEventQuery()
@@ -251,6 +253,8 @@ QVariant DataBase::addUser(QSqlQuery &q, User newUser)
 {
     q.addBindValue(newUser.getName());
     q.addBindValue(newUser.getNickname());
+    q.addBindValue(newUser.getPasswordHash());
+    q.addBindValue(newUser.getPasswordSalt());
     q.addBindValue(newUser.getBirthdate());
     q.exec();
     lastError = q.lastError();
@@ -356,7 +360,9 @@ User DataBase::getUser(int id)
     {
         user = User(id, query.value(1).toString(),
             query.value(2).toString(),
-            query.value(3).toDate());
+            query.value(3).toString(),
+            query.value(4).toString(),
+            query.value(5).toDate());
     }
 
     lastError = query.lastError();
