@@ -15,16 +15,30 @@ public:
      * \param id
      * \param name
      * \param nickname
+     * \param email
+     * \param password hash
+     * \param password salt
      * \param birthdate
      */
-    User(int id, QString name = "", QString nickname = "", QDate birthdate = QDate());
+    User(int id, QString name = QString(), QString nickname = QString(), QString email = QString(), QString pwdHash = QString(), QString pwdSalt = QString(), QDate birthdate = QDate());
     /*!
      * \brief User constractor without an id (all parameters required)
      * \param name
      * \param nickname
+     * \param email
+     * \param pwdHash
+     * \param pwdSalt
      * \param birthdate
      */
-    User(QString name, QString nickname, QDate birthdate);
+    User(QString name, QString nickname, QString email, QString pwdHash, QString pwdsalt, QDate birthdate);
+    /*!
+     * \brief User constractor without an id and encrypting own password
+     * \param name
+     * \param nickname
+     * \param password
+     * \param birthdate
+     */
+    User(QString name, QString nickname, QString email, QString password, QDate birthdate);
     /*!
      * \brief Returns id of the User
      * \return id
@@ -46,6 +60,43 @@ public:
      */
     QString getNickname() const {return nickname;}
     /*!
+     * \brief Returns email of the User
+     * \return email
+     */
+    QString getEmail() const {return email;}
+    /*!
+     * \brief Validate email address
+     * \return true if valid
+     */
+    bool validateEmail();
+    /*!
+     * \brief Returns the hash of the user password
+     * \return passwordHash
+     */
+    QString getPasswordHash() const {return passwordHash;}
+    /*!
+     * \brief Returns the salt of the user password
+     * \return  passwordSalt
+     */
+    QString getPasswordSalt() const {return passwordSalt;}
+    /*!
+     * \brief Set password hash and salt for the user
+     * \param hash password hash
+     * \param salt password salt
+     */
+    void setPassword(QString hash, QString salt) {this->passwordHash = hash; this->passwordSalt = salt;}
+    /*!
+     * \brief Generate and store password hash and salt in the object
+     * \param password plain text password
+     */
+    void hashPassword(QString password);
+    /*!
+     * \brief Checks if the hash of the given password and stored salt matches the stored hash
+     * \param password plan text password
+     * \return true if password hash matches stored hash
+     */
+    bool checkPassword(QString password);
+    /*!
      * \brief Returns birthdate of the User
      * \return birthdate
      */
@@ -64,6 +115,7 @@ public:
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", ").append(nickname);
+        result.append(", ").append(email);
         result.append(", ").append(birthdate.toString("dd.MM.yyyy"));
         return result;
     }
@@ -82,9 +134,26 @@ private:
      */
     QString nickname;
     /*!
+     * \brief User email
+     */
+    QString email;
+    /*!
+     * \brief Hash of user password
+     */
+    QString passwordHash;
+    /*!
+     * \brief Salt of user password
+     */
+    QString passwordSalt;
+    /*!
      * \brief User birthdate
      */
     QDate birthdate;
+    /*!
+     * \brief Generate a password salt (random string)
+     * \return password salt
+     */
+    QString generatePwdSalt();
 };
 
 //! \brief The Event class
@@ -97,25 +166,23 @@ public:
      * \brief Event constructor for a given id
      * \param id
      * \param name
-     * \param start start date
-     * \param end end date
+     * \param creation creation date
      * \param admin administrator
      * \param place
      * \param description
      * \param finished
      */
-    Event(int id, QString name = "", QDate start = QDate(), QDate end = QDate(), User admin = User(), QString place = "", QString description = "", bool finished = false);
+    Event(int id, QString name = QString(), QDate creation = QDate(), User admin = User(), QString place = QString(), QString description = QString(), bool finished = false);
     /*!
      * \brief Event constructor without an id (all parameters required)
      * \param name
-     * \param start start date
-     * \param end end date
+     * \param creation creation date
      * \param admin administrator
      * \param place
      * \param description
      * \param finished
      */
-    Event(QString name, QDate start, QDate end,  User admin, QString place = "", QString description = "", bool finished = false);
+    Event(QString name, QDate creation,  User admin, QString place = QString(), QString description = QString(), bool finished = false);
     /*!
      * \brief Returns id of the Event
      * \return  id
@@ -132,15 +199,10 @@ public:
      */
     QString getName() const {return name;}
     /*!
-     * \brief Returns start date of the Event
-     * \return startDate
+     * \brief Returns creation date of the Event
+     * \return creationDate
      */
-    QDate getStartDate() const {return startDate;}
-    /*!
-     * \brief Returns end date of the Event
-     * \return endDate
-     */
-    QDate getEndDate() const {return endDate;}
+    QDate getCreationDate() const {return creationDate;}
     /*!
      * \brief Returns administrator of the Event
      * \return admin
@@ -175,12 +237,12 @@ public:
         result = QString::number(id);
         result.append(", ").append(name);
         result.append(", at ").append(place);
-        result.append(", from ").append(startDate.toString("dd.MM.yyyy"));
+        result.append(", from ").append(creationDate.toString("dd.MM.yyyy"));
         result.append(", by ");
-        if(admin.getNickname() == "")
-            result.append(admin.getNickname());
-        else
+        if(admin.getNickname().isEmpty())
             result.append(QString::number(admin.getId()));
+        else
+            result.append(admin.getNickname());
         return result;
     }
 
@@ -194,13 +256,9 @@ private:
      */
     QString name;
     /*!
-     * \brief Event start date
+     * \brief Event creation date
      */
-    QDate startDate;
-    /*!
-     * \brief Event end date
-     */
-    QDate endDate;
+    QDate creationDate;
     /*!
      * \brief Event administrator
      */
@@ -237,7 +295,7 @@ public:
      * \param description
      */
     Transaction(int id, User userGiving = User(), User userReceiving = User(), Event event = Event(),
-                double amount = 0.0, QDate date = QDate(), QString place = "", QString description = "");
+                double amount = 0.0, QDate date = QDate(), QString place = QString(), QString description = QString());
     /*!
      * \brief Transaction constructor without an id (all parameters required)
      * \param userGiving user who gives/pays money
@@ -248,7 +306,7 @@ public:
      * \param place
      * \param description
      */
-    Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place = "", QString description = "");
+    Transaction(User userGiving, User userReceiving, Event event, double amount, QDate date, QString place = QString(), QString description = QString());
     /*!
      * \brief Returns id of the Transaction
      * \return id
@@ -302,19 +360,19 @@ public:
         QString result;
         result = QString::number(id);
         result.append(", ");
-        if(userGiving.getNickname() == "")
+        if(userGiving.getNickname().isEmpty())
             result.append(QString::number(userGiving.getId()));
         else
             result.append(userGiving.getNickname());
         result.append(" payed ").append(QString::number(amount, 'g', 2));
         result.append(" to ");
-        if(userReceiving.getNickname() == "")
+        if(userReceiving.getNickname().isEmpty())
             result.append(QString::number(userReceiving.getId()));
         else
             result.append(userReceiving.getNickname());
         result.append(" on ").append(date.toString("dd.MM.yyyy"));
         result.append(" for ");
-        if(event.getName() == "")
+        if(event.getName().isEmpty())
             result.append(QString::number(event.getId()));
         else
             result.append(event.getName());

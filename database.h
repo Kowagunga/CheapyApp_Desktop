@@ -151,6 +151,12 @@ public:
      * \todo this should be private
      */
     QLatin1String getInsertTransactionQuery();
+    /*!
+     * \brief Returns the number of rows of a QSqlQuery
+     * \param query QSqlQuery object with the results
+     * \return number of rows
+     */
+    int qSqlQueryNumRows(QSqlQuery query);
 private:
     /*!
      * \brief Database

@@ -15,7 +15,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    QString windowTitle = "CheapyApp";
+    QString windowTitle = QString("CheapyApp");
     this->setWindowTitle(windowTitle);
 
     if (!QSqlDatabase::drivers().contains("QSQLITE"))
@@ -240,23 +240,17 @@ void MainWindow::updateTransactionAmount()
     int userReceivingId = getIdFromCmb(ui->cmbUserReceives);
     double value = 0;
 
-    // Create the data model
-    QSqlQueryModel *model = new QSqlQueryModel;
-    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
-                               " AND transactions.usergives = " + QString::number(userGivingId) +
-                               " AND transactions.userreceives = " + QString::number(userReceivingId));
+    QSqlQuery query(QString("SELECT SUM(amount) FROM transactions WHERE transactions.event = %1"
+                            " AND transactions.usergives = %2 AND transactions.userreceives = %3")
+                    .arg(eventId).arg(userGivingId).arg(userReceivingId));
+    if(query.next())
+        value = query.value(0).toDouble();
 
-    if(model->rowCount() != 0)
-        value  = model->data(model->index(0,0)).toDouble();
-
-    // Create the data model
-    model = new QSqlQueryModel;
-    model->setQuery("SELECT SUM(amount) FROM transactions WHERE transactions.event = " + QString::number(eventId) +
-                               " AND transactions.usergives = " + QString::number(userReceivingId) +
-                               " AND transactions.userreceives = " + QString::number(userGivingId));
-
-    if(model->rowCount() != 0)
-        value -= model->data(model->index(0,0)).toDouble();
+    QSqlQuery query2(QString("SELECT SUM(amount) FROM transactions WHERE transactions.event = %1"
+                                " AND transactions.usergives = %2 AND transactions.userreceives = %3")
+                        .arg(eventId).arg(userReceivingId).arg(userGivingId));
+    if(query2.next())
+        value -= query2.value(0).toDouble();
 
     ui->dsbAmount->setValue(value);
 
@@ -282,6 +276,19 @@ void MainWindow::newUser()
     QLineEdit *leNickname = new QLineEdit(&dialog);
     leNickname->setMaxLength(30);
     form.addRow("Nickname*:", leNickname);
+    QLineEdit *leEmail = new QLineEdit(&dialog);
+    leEmail->setMaxLength(40);
+    form.addRow("Email*:", leEmail);
+
+    QLineEdit *lePassword = new QLineEdit(&dialog);
+    lePassword->setMaxLength(16);
+    lePassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Password*:", lePassword);
+    QLineEdit *leRepeatPassword = new QLineEdit(&dialog);
+    leRepeatPassword->setMaxLength(16);
+    leRepeatPassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Repeat password*:", leRepeatPassword);
+
     QDateEdit *deBirthday = new QDateEdit(&dialog);
     deBirthday->setDate(QDate(2000,1,1));
     deBirthday->setDisplayFormat("dd.MM.yyyy");
@@ -298,25 +305,45 @@ void MainWindow::newUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
-        QString problem;
+        // Trim string fields
+        leName->setText(leName->text().trimmed());
+        leNickname->setText(leNickname->text().trimmed());
+        leEmail->setText(leEmail->text().trimmed());
+
+        User userToAdd = User(leName->text(),leNickname->text(),leEmail->text(),lePassword->text(),deBirthday->date());
+
+        QString problem = QString();
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
         else if(leNickname->text().isEmpty())
             problem = "The field 'Nickname' cannot be empty";
+        else if(userToAdd.validateEmail() == false)
+            problem = "The email address is not valid";
+        else if(lePassword->text().size() < 8)
+            problem = "The password must consist of at least 8 characters";
+        else if(QString::compare(lePassword->text(),leRepeatPassword->text(),Qt::CaseSensitive)!=0)
+            problem = "The repeated password is incorrect";
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save User
             QSqlQuery query;
             query.prepare(db.getInsertUserQuery());
-            db.addUser(query,User(leName->text(),leNickname->text(),deBirthday->date()));
+            db.addUser(query,userToAdd);
 
             if(db.getLastError().type() != QSqlError::NoError) {
                 showError(db.getLastError());
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("User %1 (%2) with email %3 created successfully.")
+                               .arg(userToAdd.getNickname()).arg(userToAdd.getName()).arg(userToAdd.getEmail()));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
 
             checkDatabaseActions();
         }
@@ -345,14 +372,6 @@ void MainWindow::newEvent()
     QLineEdit *leName = new QLineEdit(&dialog);
     leName->setMaxLength(20);
     form.addRow("Name*:", leName);
-    QDateEdit *deStart = new QDateEdit(&dialog);
-    deStart->setDate(QDateTime::currentDateTime().date());
-    deStart->setDisplayFormat("dd.MM.yyyy");
-    form.addRow("Start:", deStart);
-    QDateEdit *deEnd = new QDateEdit(&dialog);
-    deEnd->setDate(QDateTime::currentDateTime().date());
-    deEnd->setDisplayFormat("dd.MM.yyyy");
-    form.addRow("End:", deEnd);
     QLineEdit *lePlace = new QLineEdit(&dialog);
     lePlace->setMaxLength(30);
     form.addRow("Place:", lePlace);
@@ -360,7 +379,7 @@ void MainWindow::newEvent()
     leDescription->setMaxLength(50);
     form.addRow("Description:", leDescription);
     QComboBox *cmbAdmin = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbAdmin,false,"");
+    bool noUsers = loadUsersToCmb(cmbAdmin,false,QString());
     form.addRow("Admin:", cmbAdmin);
 
     if(noUsers)
@@ -382,24 +401,34 @@ void MainWindow::newEvent()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
-        QString problem;
+        // Trim string fields
+        leName->setText(leName->text().trimmed());
+        lePlace->setText(lePlace->text().trimmed());
+        leDescription->setText(leDescription->text().trimmed());
+
+        QString problem = QString();
         if(leName->text().isEmpty())
             problem = "The field 'Name' cannot be empty";
-        else if (deEnd->date() < deStart->date())
-            problem = "The end date must be the same or later than the start date";
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save Event
             QSqlQuery query;
             query.prepare(db.getInsertEventQuery());
-            db.addEvent(query, Event(leName->text(), deStart->date(), deEnd->date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
+            db.addEvent(query, Event(leName->text(), QDateTime::currentDateTime().date(), User(getIdFromCmb(cmbAdmin)), lePlace->text(), leDescription->text(), 0));
             if(db.getLastError().type() != QSqlError::NoError) {
                 showError(db.getLastError());
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("Event %1 created successfully.")
+                               .arg(leName->text()));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
 
             checkDatabaseActions();
         }
@@ -426,13 +455,13 @@ void MainWindow::newTransaction()
     dialog.setWindowTitle("Create new transaction");
 
     QComboBox *cmbEvents = new QComboBox(&dialog);
-    bool noEvents = loadEventsToCmb(cmbEvents,"");
+    bool noEvents = loadEventsToCmb(cmbEvents,QString());
     form.addRow("Event:", cmbEvents);
     QComboBox *cmbUserGives = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbUserGives,true,"");
+    bool noUsers = loadUsersToCmb(cmbUserGives,true,QString());
     form.addRow("User giving:", cmbUserGives);
     QComboBox *cmbUserReceives = new QComboBox(&dialog);
-    loadUsersToCmb(cmbUserReceives,true,"");
+    loadUsersToCmb(cmbUserReceives,true,QString());
     form.addRow("User receiving:", cmbUserReceives);
     QDoubleSpinBox *dsbAmount = new QDoubleSpinBox(&dialog);
     form.addRow("Amount:", dsbAmount);
@@ -481,12 +510,14 @@ void MainWindow::newTransaction()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         //! \todo check dialog before closing it
-        QString problem;
+        lePlace->setText(lePlace->text().trimmed());
+        leDescription->setText(leDescription->text().trimmed());
+
+        QString problem = QString();
         if(getIdFromCmb(cmbUserGives)==getIdFromCmb(cmbUserReceives))
             problem = "User giving must be different from user receiving";
-        //! \todo date between start and end date from event
 
-        if(problem == "")
+        if(problem.isEmpty())
         {
             // save Transaction
             QSqlQuery query;
@@ -498,7 +529,14 @@ void MainWindow::newTransaction()
                 return;
             }
             else
+            {
+                QMessageBox msgBox;
+                msgBox.setText(QString("Transaction created successfully."));
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
                 tabSelected(ui->tabWidget->currentIndex()); // Reload information
+            }
+
             if(ui->tabWidget->currentIndex()==1)
                 loadTransactions();
 
@@ -527,7 +565,7 @@ void MainWindow::deleteUser()
     dialog.setWindowTitle("Delete existing user");
 
     QComboBox *cmbUser = new QComboBox(&dialog);
-    bool noUsers = loadUsersToCmb(cmbUser,false,"");
+    bool noUsers = loadUsersToCmb(cmbUser,false,QString());
 
     if(noUsers)
     {
@@ -540,6 +578,11 @@ void MainWindow::deleteUser()
 
     form.addRow("User:", cmbUser);
 
+    QLineEdit *lePassword = new QLineEdit(&dialog);
+    lePassword->setMaxLength(16);
+    lePassword->setEchoMode(QLineEdit::Password);
+    form.addRow("Password*:", lePassword);
+
     // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
     QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
                                Qt::Horizontal, &dialog);
@@ -550,6 +593,7 @@ void MainWindow::deleteUser()
     // Show the dialog as modal
     if (dialog.exec() == QDialog::Accepted) {
         int transactions, events;
+        User userToDelete = db.getUser(getIdFromCmb(cmbUser));
         if((transactions = db.getNumTransactions(getIdFromCmb(cmbUser))))
         {
             QMessageBox msgBox;
@@ -561,6 +605,13 @@ void MainWindow::deleteUser()
         {
             QMessageBox msgBox;
             msgBox.setText("The user is admin of " + QString::number(events) + " events. Delete them first");
+            msgBox.setIcon(QMessageBox::Warning);
+            msgBox.exec();
+        }
+        else if(userToDelete.checkPassword(lePassword->text()) == false)
+        {
+            QMessageBox msgBox;
+            msgBox.setText("The password is incorrect.");
             msgBox.setIcon(QMessageBox::Warning);
             msgBox.exec();
         }
@@ -586,7 +637,7 @@ void MainWindow::deleteEvent()
     dialog.setWindowTitle("Delete existing event");
 
     QComboBox *cmbEvent = new QComboBox(&dialog);
-    bool noEvents = loadEventsToCmb(cmbEvent,"");
+    bool noEvents = loadEventsToCmb(cmbEvent,QString());
 
     if(noEvents)
     {
@@ -682,7 +733,7 @@ void MainWindow::showAboutDialog()
     dialog.setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::WindowSystemMenuHint|Qt::WindowCloseButtonHint);
     dialog.setWindowTitle("About CheapyApp");
 
-    QString title = "CheapyApp Version " + QString("%1.%2.%3").arg(VERSION_MAJOR).arg(VERSION_MINOR).arg(VERSION_BUILD);
+    QString title = QString("CheapyApp Version ") + QString("%1.%2.%3").arg(VERSION_MAJOR).arg(VERSION_MINOR).arg(VERSION_BUILD);
     QLabel *lblTitleAndVersion = new QLabel(title);
     lblTitleAndVersion->setStyleSheet("QLabel { font-weight: bold }");
     layout.addWidget(lblTitleAndVersion);
@@ -734,11 +785,17 @@ void MainWindow::deleteDatabase()
         db.deleteDb();
         db.init();
 
-        QMessageBox msgBox;
-        msgBox.setText("Database deleted.");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.exec();
-
+        if(db.getLastError().type() != QSqlError::NoError) {
+            showError(db.getLastError());
+            return;
+        }
+        else
+        {
+            QMessageBox msgBox;
+            msgBox.setText("Database deleted.");
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.exec();
+        }
         checkDatabaseActions();
         tabSelected(ui->tabWidget->currentIndex()); // Reload information
     }
@@ -750,6 +807,10 @@ void MainWindow::deleteDatabase()
 void MainWindow::initExampleDatabase()
 {
     db.initExampleDatabase();
+    if(db.getLastError().type() != QSqlError::NoError) {
+        showError(db.getLastError());
+        return;
+    }
 
     QMessageBox msgBox;
     msgBox.setText("Example data inserted to the database");
@@ -918,9 +979,9 @@ bool MainWindow::loadUsersToCmb(QComboBox *cmbBox, bool includeKitty, QString co
     QString strQuery = "SELECT nickname, id FROM users";
     if(!includeKitty)
         strQuery.append(" WHERE users.id IS NOT " + QString::number(db.getKittyId()));
-    if(condition!="" && !includeKitty)
+    if(!condition.isEmpty() && !includeKitty)
         strQuery.append(" AND " + condition);
-    if(condition!="" && includeKitty)
+    if(!condition.isEmpty() && includeKitty)
         strQuery.append(" WHERE " + condition);
 
     model->setQuery(strQuery);
@@ -939,7 +1000,7 @@ bool MainWindow::loadEventsToCmb(QComboBox *cmbBox, QString condition)
     // Create the data model
     QSqlQueryModel *model = new QSqlQueryModel;
     QString strQuery = "SELECT name, id FROM events";
-    if(condition!="")
+    if(!condition.isEmpty())
         strQuery.append(" WHERE " + condition);
 
     model->setQuery(strQuery);
@@ -963,12 +1024,13 @@ bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     // Set the localized header captions
     globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("User Name"));
     globalModel->setHeaderData(globalModel->fieldIndex("nickname"), Qt::Horizontal, tr("Nickname"));
+    globalModel->setHeaderData(globalModel->fieldIndex("email"), Qt::Horizontal, tr("Email Address"));
     globalModel->setHeaderData(globalModel->fieldIndex("birthdate"), Qt::Horizontal, tr("Birthday Date"));
 
-    QString filter;
+    QString filter = QString();
     filter = "id IS NOT " + QString::number(db.getKittyId());
 
-    if(condition != "")
+    if(!condition.isEmpty())
     {
         filter.append(" AND ").append(condition);
     }
@@ -982,6 +1044,8 @@ bool MainWindow::loadUsersToTable(QTableView *tableView, QString condition)
     tableView->setModel(globalModel);
     tableView->setItemDelegate(new QSqlRelationalDelegate(tableView));
     tableView->setColumnHidden(globalModel->fieldIndex("id"), true);
+    tableView->setColumnHidden(globalModel->fieldIndex("passwordhash"), true);
+    tableView->setColumnHidden(globalModel->fieldIndex("passwordsalt"), true);
     tableView->setCurrentIndex(globalModel->index(0, 0));
 
     return globalModel->rowCount() == 0;
@@ -1002,15 +1066,14 @@ bool MainWindow::loadEventsToTable(QTableView *tableView, QString condition)
 
     // Set the localized header captions
     globalModel->setHeaderData(globalModel->fieldIndex("name"), Qt::Horizontal, tr("Event Name"));
-    globalModel->setHeaderData(globalModel->fieldIndex("start"), Qt::Horizontal, tr("Start Date"));
-    globalModel->setHeaderData(globalModel->fieldIndex("end"), Qt::Horizontal, tr("End Date"));
+    globalModel->setHeaderData(globalModel->fieldIndex("creation"), Qt::Horizontal, tr("Creation Date"));
     globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
     globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
     globalModel->setHeaderData(globalModel->fieldIndex("finished"), Qt::Horizontal, tr("Finished?"));
     globalModel->setHeaderData(globalModel->fieldIndex("admin"), Qt::Horizontal, tr("Administrator"));
 
-    QString filter;
-    if(condition != "")
+    QString filter = QString();
+    if(!condition.isEmpty())
     {
         filter = condition;
     }
@@ -1051,7 +1114,7 @@ bool MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     globalModel->setHeaderData(globalModel->fieldIndex("place"), Qt::Horizontal, tr("Place"));
     globalModel->setHeaderData(globalModel->fieldIndex("description"), Qt::Horizontal, tr("Description"));
 
-    QString filter;
+    QString filter = QString();
     if(showKitty && !showPersonal)
     {
         filter = "userreceives = " + QString::number(db.getKittyId()) + " OR usergives = " + QString::number(db.getKittyId());
@@ -1062,12 +1125,12 @@ bool MainWindow::loadTransactionsToTable(QTableView *tableView, bool showKitty, 
     }
     else if (!showKitty && !showPersonal)
     {
-        filter = "";
+        filter.isEmpty();
     }
 
-    if(condition != "")
+    if(!condition.isEmpty())
     {
-        if(filter == "")
+        if(filter.isEmpty())
             filter = condition;
         else
             filter.append(" AND (" + condition + ")");
