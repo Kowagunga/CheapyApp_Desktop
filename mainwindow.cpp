@@ -740,6 +740,7 @@ void MainWindow::deleteDatabase()
         msgBox.exec();
 
         checkDatabaseActions();
+        tabSelected(ui->tabWidget->currentIndex()); // Reload information
     }
 }
 
@@ -756,7 +757,6 @@ void MainWindow::initExampleDatabase()
     msgBox.exec();
 
     checkDatabaseActions();
-
     tabSelected(ui->tabWidget->currentIndex()); // Reload information
 }
 
@@ -784,6 +784,7 @@ void MainWindow::importDatabase()
         msgBox.exec();
 
         checkDatabaseActions();
+        tabSelected(ui->tabWidget->currentIndex()); // Reload information
     }
 }
 
@@ -806,6 +807,7 @@ void MainWindow::exportDatabase()
         msgBox.exec();
 
         checkDatabaseActions();
+        tabSelected(ui->tabWidget->currentIndex()); // Reload information
     }
 }
 
