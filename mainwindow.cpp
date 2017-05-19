@@ -925,7 +925,7 @@ void MainWindow::showUser(QModelIndex index)
         QNetworkAccessManager *manager = new QNetworkAccessManager(this);
         connect(manager, SIGNAL(finished(QNetworkReply*)),
                 this, SLOT(gravatarDownloaded(QNetworkReply*)));
-        manager->get(QNetworkRequest(QUrl(QString("https://www.gravatar.com/avatar/").append(selectedUser.getEmailHash()))));
+        manager->get(QNetworkRequest(QUrl(QString("https://www.gravatar.com/avatar/").append(selectedUser.getEmailHash()).append("?d=404"))));
     }
 }
 
@@ -934,12 +934,15 @@ void MainWindow::showUser(QModelIndex index)
  */
 void MainWindow::gravatarDownloaded(QNetworkReply* reply)
 {
-    if (reply->error() != QNetworkReply::NoError) {
+    if(reply->error() == QNetworkReply::ContentNotFoundError) {
+        return; // User has no gravatar profile
+    }
+    if(reply->error() != QNetworkReply::NoError) {
         qDebug() << "Error in" << reply->url() << ":" << reply->errorString();
         return;
     }
     QVariant attribute = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
-    if (attribute.isValid()) {
+    if(attribute.isValid()) {
         QUrl url = attribute.toUrl();
         qDebug() << "must go to:" << url;
         return;
