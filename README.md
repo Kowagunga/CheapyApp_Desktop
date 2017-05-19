@@ -8,6 +8,7 @@ Desktop software written in C++/Qt for managing economic transactions among user
 	* Documentation with doxygen (26/03/2017)
         * Password field for users. Stored as SHA256 hash and 16 character salt (11/05/2017)
         * Email field for users and email validator. Event has creation date instad of start/end. (12/05/2017)
+        * Download and show user gravatar with the hash of the user email. (19/05/2017)
 
 ## General to-do list
 \todo

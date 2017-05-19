@@ -54,6 +54,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     connect(ui->tvEventTransactions, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(selectTransaction(QModelIndex)));
 
+    connect(ui->tvTable, SIGNAL(doubleClicked(QModelIndex)), this, SLOT(showUser(QModelIndex)));
+
     checkDatabaseActions(); // Depending on the loaded database, some actions are disabled
 }
 
@@ -309,6 +311,7 @@ void MainWindow::newUser()
         leName->setText(leName->text().trimmed());
         leNickname->setText(leNickname->text().trimmed());
         leEmail->setText(leEmail->text().trimmed());
+        leEmail->setText(leEmail->text().toLower());
 
         User userToAdd = User(leName->text(),leNickname->text(),leEmail->text(),lePassword->text(),deBirthday->date());
 
@@ -905,6 +908,74 @@ void MainWindow::selectTransaction(QModelIndex index)
 
     selectIdInCmb(ui->cmbUserGives, selectedTransaction.getUserGiving().getId());
     selectIdInCmb(ui->cmbUserReceives, selectedTransaction.getUserReceiving().getId());
+}
+
+/*!
+ * Downloads the gravatar corresponding to the email of the selected user
+ */
+void MainWindow::showUser(QModelIndex index)
+{
+    if(ui->rbUsers->isChecked())
+    {
+        int row = index.row();
+        QAbstractItemModel *model = ui->tvTable->model();
+        int userid = model->data(model->index(row,0)).toInt();
+        User selectedUser = db.getUser(userid);
+
+        QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+        connect(manager, SIGNAL(finished(QNetworkReply*)),
+                this, SLOT(gravatarDownloaded(QNetworkReply*)));
+        manager->get(QNetworkRequest(QUrl(QString("https://www.gravatar.com/avatar/").append(selectedUser.getEmailHash()))));
+    }
+}
+
+/*!
+ * Shows the downloaded gravatar in a dialog
+ */
+void MainWindow::gravatarDownloaded(QNetworkReply* reply)
+{
+    if (reply->error() != QNetworkReply::NoError) {
+        qDebug() << "Error in" << reply->url() << ":" << reply->errorString();
+        return;
+    }
+    QVariant attribute = reply->attribute(QNetworkRequest::RedirectionTargetAttribute);
+    if (attribute.isValid()) {
+        QUrl url = attribute.toUrl();
+        qDebug() << "must go to:" << url;
+        return;
+    }
+//    qDebug() << "ContentType:" << reply->header(QNetworkRequest::ContentTypeHeader).toString();
+    QByteArray jpegData = reply->readAll();
+    QPixmap pixmap;
+    pixmap.loadFromData(jpegData);
+
+    // Create dialog
+    QDialog dialog(this);
+    QHBoxLayout layout(&dialog);
+
+    dialog.setWindowFlags(Qt::Dialog|Qt::WindowTitleHint|Qt::WindowSystemMenuHint|Qt::WindowCloseButtonHint);
+    dialog.setWindowTitle("User avatar");
+
+    QLabel *image = new QLabel(&dialog);
+    image->setPixmap(pixmap);
+    layout.addWidget(image);
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok,
+                               Qt::Horizontal, &dialog);
+    layout.addWidget(&buttonBox);
+
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+
+    }
+
+    // Delete QNetwork Reply and Manager
+    reply->abort();
+    reply->deleteLater();
+    reply->manager()->deleteLater();
 }
 
 //_____Helpers_____

@@ -70,6 +70,11 @@ public:
      */
     bool validateEmail();
     /*!
+     * \brief Get email hash for gravatar
+     * \return hash MD5 hash of user email
+     */
+    QString getEmailHash();
+    /*!
      * \brief Returns the hash of the user password
      * \return passwordHash
      */

@@ -4,6 +4,9 @@
 #include <QMainWindow>
 #include <QtWidgets>
 #include <QtSql>
+#include <QtNetwork/QNetworkAccessManager>
+#include <QtNetwork/QNetworkReply>
+#include <QtNetwork/QNetworkRequest>
 #include "database.h"
 
 namespace Ui {
@@ -53,6 +56,16 @@ private slots:
      * \param index selected transaction as index of the table model
      */
     void selectTransaction(QModelIndex index);
+    /*!
+     * \brief Show User Profile
+     * \param index selected row as index of the table model
+     */
+    void showUser(QModelIndex index);
+    /*!
+     * \brief Gravatar download finished
+     * \param image
+     */
+    void gravatarDownloaded(QNetworkReply *reply);
 
 private:
     /*!

@@ -85,6 +85,19 @@ bool User::validateEmail()
 }
 
 /*!
+ * Returns the Md5 hash from User email address
+ *
+ * Email must be trimmed and low-case in order to work with Gravatar
+ */
+QString User::getEmailHash()
+{
+    if(email.isEmpty())
+        return QString();
+
+    return QString(QCryptographicHash::hash(email.toUtf8(),QCryptographicHash::Md5).toHex());
+}
+
+/*!
  * Stores the hash of the given password
  *
  * Generates a random salt and stores the salt and the hash of the concatenated password with that salt.
